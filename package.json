@@ -1,0 +1,22 @@
+{
+  "name": "adverts247",
+  "version": "1.0.0",
+  "description": "rest API for adverts 247",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "tunnel": "ngrok http 3001"
+  },
+  "author": "adverts247",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.0.0",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.10.11",
+    "ngrok": "^3.3.0",
+    "nodemon": "^2.0.6"
+  }
+}
