@@ -2,6 +2,16 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 
+const bankInfoSchema = new mongoose.Schema({
+    bank: {
+        name: String,
+        code: String
+    },
+    accountNumber: String,
+    accountName: String
+})
+
+
 const userSchema = new mongoose.Schema ({
     email: {
         type: String,
@@ -48,7 +58,8 @@ const userSchema = new mongoose.Schema ({
     vehicleReg: {
         type: String,
         default: ''
-    }
+    },
+    bankInformation: bankInfoSchema
 });
 
 

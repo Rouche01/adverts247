@@ -42,8 +42,10 @@ router.get('/drivers', async(req, res) => {
 // @desc update a user's details
 // @access Private
 router.patch('/drivers/:id', requireAuth, async(req, res) => {
-    const { profilePhoto, driversLicense, insuranceCert, vehicleReg } = req.body;
-    if(!profilePhoto && !driversLicense && !insuranceCert && !vehicleReg) {
+    const { profilePhoto, driversLicense, insuranceCert, 
+        vehicleReg, email, phoneNumber, bankInformation } = req.body;
+    if(!profilePhoto && !driversLicense && !insuranceCert 
+        && !vehicleReg && !email && !phoneNumber && !bankInformation) {
         return res.status(400).send({
             error: 'No update was sent'
         })
@@ -73,6 +75,18 @@ router.patch('/drivers/:id', requireAuth, async(req, res) => {
 
     if(vehicleReg) {
         newValues.$set.vehicleReg = vehicleReg;
+    }
+
+    if(email) {
+        newValues.$set.email = email;
+    }
+
+    if(phoneNumber) {
+        newValues.$set.phoneNumber = phoneNumber;
+    }
+
+    if(bankInformation) {
+        newValues.$set.bankInformation = bankInformation;
     }
 
     try {
