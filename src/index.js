@@ -11,6 +11,8 @@ const requireAuth = require('./middlewares/requireAuth');
 require('dotenv').config();
 
 
+const PORT = process.env.PORT;
+
 app.use(bodyParser.json());
 app.use(authRoutes);
 app.use(driverRoutes);
@@ -20,8 +22,8 @@ app.get('/', requireAuth, (req, res) => {
     res.send('Welcome to Adverts 247 Rest API');
 });
 
-app.listen(3001, () => {
-    console.log("Localhost is listening on port 3001");
+app.listen(PORT, () => {
+    console.log(`Localhost is listening on port ${PORT}`);
 })
 
 mongoose.connect(process.env.MONGO_URI, {
