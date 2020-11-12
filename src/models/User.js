@@ -8,7 +8,8 @@ const bankInfoSchema = new mongoose.Schema({
         code: String
     },
     accountNumber: String,
-    accountName: String
+    accountName: String,
+    recipientCode: String
 })
 
 
@@ -59,7 +60,7 @@ const userSchema = new mongoose.Schema ({
         type: String,
         default: ''
     },
-    bankInformation: bankInfoSchema
+    bankInformation: bankInfoSchema,
 });
 
 
