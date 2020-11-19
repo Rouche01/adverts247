@@ -11,7 +11,7 @@ const requireAuth = require('./middlewares/requireAuth');
 require('dotenv').config();
 
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3001;
 
 app.use(bodyParser.json());
 app.use(authRoutes);
