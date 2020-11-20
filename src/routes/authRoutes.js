@@ -48,16 +48,18 @@ router.post('/drivers/signin', async(req, res) => {
     const { email, password } = req.body;
 
     if(!email || !password) {
-        return res.status(400).send({
-            error: "You have to provide both email and password."
+        return res.status(400).json({
+            status: 'error',
+            message: "You have to provide both email and password."
         });
     }
 
     const user = await User.findOne({ email });
 
     if(!user || user.role !== 'driver') {
-        return res.status(400).send({
-            error: "You are logging with wrong credentials"
+        return res.status(400).json({
+            status: 'error',
+            message: "You are logging with wrong credentials"
         });
     }
 
@@ -69,8 +71,9 @@ router.post('/drivers/signin', async(req, res) => {
             token
         })
     } catch(err) {
-        return res.status(400).send({
-            error: `You are logging with wrong credentials`
+        return res.status(400).json({
+            status: 'error',
+            message: `You are logging with wrong credentials`
         })
     }
 })
