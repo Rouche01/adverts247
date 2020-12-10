@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes');
 const driverRoutes = require('./routes/driverRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const mediaBucketRoutes = require('./routes/mediaBucketRoutes');
 const requireAuth = require('./middlewares/requireAuth');
 require('dotenv').config();
 
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 app.use(authRoutes);
 app.use(driverRoutes);
 app.use(messageRoutes);
+app.use(mediaBucketRoutes);
 
 app.get('/', requireAuth, (req, res) => {
     res.send('Welcome to Adverts 247 Rest API');
