@@ -54,9 +54,10 @@ router.get('/mediaBucket/prefix/:bucketName', (req, res) => {
 });
 
 
-router.post('/mediaBucket/vod-contents', upload, (req, res) => {
+router.post('/mediaBucket/vod-contents/:bucketname', upload, (req, res) => {
 
     const { videoLabel } = req.body;
+    const { bucketname } = req.params;
     
     // console.log(req.file);
     const fileName = req.file.originalname.split('.');
@@ -65,7 +66,7 @@ router.post('/mediaBucket/vod-contents', upload, (req, res) => {
     const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
     const params = {
-        Bucket: 'vod-watchfolder-247/inputs',
+        Bucket: `${bucketname}/inputs`,
         Key: `${videoLabel}-${uuidv4()}.${fileType}`,
         Body: req.file.buffer
     }
