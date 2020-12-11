@@ -20,7 +20,8 @@ router.get('/mediaBucket/prefix/:bucketName', (req, res) => {
     const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
     const params = {
-        Bucket: bucketID
+        Bucket: bucketID,
+        Delimiter: '/'
     };
 
     s3.listObjects(params, (err, data) => {
@@ -30,24 +31,10 @@ router.get('/mediaBucket/prefix/:bucketName', (req, res) => {
             })
         }
         else {
-            const objects = data.Contents;
-            const newObj = objects.map(obj => {
-                return obj.Key
+            // console.log(data);
+            const prefixs = data.CommonPrefixes.map(prefix => {
+                return prefix.Prefix;
             });
-
-            let prefixs = [];
-            let memoryPrefix;
-
-            for ( let i = 0; i < newObj.length; i++ ) {
-
-                const prefix = newObj[i].split('/')[0];
-
-                if(prefix !== memoryPrefix) {
-                    prefixs.push(prefix);
-                }
-
-                memoryPrefix = prefix;
-            }
             res.status(200).send(prefixs);
         }
     })
