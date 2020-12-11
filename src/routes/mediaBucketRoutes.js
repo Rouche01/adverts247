@@ -33,7 +33,7 @@ router.get('/mediaBucket/prefix/:bucketName', (req, res) => {
         else {
             // console.log(data);
             const prefixs = data.CommonPrefixes.map(prefix => {
-                return prefix.Prefix;
+                return prefix.Prefix.replace('/', '');
             });
             res.status(200).send(prefixs);
         }
