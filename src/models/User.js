@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema ({
         default: ''
     },
     bankInformation: bankInfoSchema,
-});
+}, { timestamps: true });
 
 
 userSchema.pre('save', function (next) {
