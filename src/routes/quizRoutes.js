@@ -14,10 +14,15 @@ router.get('/quizzes', async(req, res) => {
     try {
         const quizzes = await Quiz.find();
         const number = quizzes.length;
-        res.status(200).send({ quizzes, number });
+        res.status(200).json({
+            status: true, 
+            quizzes, 
+            number 
+        });
     } catch(err) {
-        res.status(500).send({
-            error: 'Unable to retrieve quizzes'
+        res.status(500).json({
+            status: false,
+            message: err.message
         });
     }
 });
@@ -26,10 +31,14 @@ router.get('/quizzes', async(req, res) => {
 router.get('/quiz/:id', async(req, res) => {
     try {
         const quiz = await Quiz.findOne({ _id: req.params.id });
-        res.status(200).send({ quiz });
+        res.status(200).json({ 
+            status: true,
+            quiz
+         });
     } catch(err) {
-        res.status(500).send({
-            error: 'Unable to retrieve quiz'
+        res.status(500).json({
+            status: false,
+            message: err.message
         });
     }
 });
@@ -67,36 +76,60 @@ router.post('/quizzes', multerUploads, cloudinaryConfig, async(req, res) => {
 
             try {
                 await quiz.save();
-                res.status(200).send({
+                res.status(200).json({
+                    status: true,
                     message: 'Quiz created successfully'
                 })
             } catch(err) {
-                res.status(500).send({
-                    error
+                res.status(500).json({
+                    status: true,
+                    message: err.message
                 });
             }
 
         } catch(err) {
-            res.status(401).send(err);
+            res.status(401).json({
+                status: false,
+                message: err.message
+            });
         }
     }
 
 });
 
 
-router.delete('/quiz/:id', async(req, res) => {
+router.delete('/quiz/:id', cloudinaryConfig, async(req, res) => {
+
     try {
-        const response = await Quiz.findByIdAndDelete({ _id: req.params.id });
-        res.status(200).send({
+        const quizExist = await Quiz.findOne({ _id: req.params.id });
+        if(!quizExist) return res.status(404).json({
+            status: false,
+            message: "This quiz does not exist"
+        });
+
+        const { quizImgUri } = quizExist;
+        const splitImgArr = quizImgUri.split('/');
+        const imgPubId = splitImgArr[splitImgArr.length - 1].split('.')[0];
+
+        const { result } = await uploader.destroy(imgPubId);
+        if(result !== 'ok') return res.status(500).json({
+            status: false,
+            message: "Unable to delete quiz resource"
+        })
+
+        await Quiz.deleteOne({ _id: req.params.id })
+        res.status(200).json({
+            status: true,
             message: "Quiz deleted successfully",
-            quiz: response
+            deletedQuiz: quizExist
         });
     } catch(err) {
-        res.status(500).send({
-            message: "Unable to delete quiz"
+        res.status(500).json({
+            status: false,
+            message: err.message
         })
     }
-})
+});
 
 
 module.exports = router;
