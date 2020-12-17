@@ -102,22 +102,22 @@ router.delete('/quiz/:id', cloudinaryConfig, async(req, res) => {
 
     try {
         const quizExist = await Quiz.findOne({ _id: req.params.id });
-        // if(!quizExist) return res.status(404).json({
-        //     status: false,
-        //     message: "This quiz does not exist"
-        // });
+        if(!quizExist) return res.status(404).json({
+            status: false,
+            message: "This quiz does not exist"
+        });
 
-        // const { quizImgUri } = quizExist;
-        // const splitImgArr = quizImgUri.split('/');
-        // const imgPubId = splitImgArr[splitImgArr.length - 1].split('.')[0];
+        const { quizImgUri } = quizExist;
+        const splitImgArr = quizImgUri.split('/');
+        const imgPubId = splitImgArr[splitImgArr.length - 1].split('.')[0];
 
-        // const { result } = await uploader.destroy(imgPubId);
-        // if(result !== 'ok') return res.status(500).json({
-        //     status: false,
-        //     message: "Unable to delete quiz resource"
-        // })
+        const { result } = await uploader.destroy(imgPubId);
+        if(result !== 'ok') return res.status(500).json({
+            status: false,
+            message: "Unable to delete quiz resource"
+        })
 
-        // await Quiz.deleteOne({ _id: req.params.id })
+        await Quiz.deleteOne({ _id: req.params.id })
         res.status(200).json({
             status: true,
             message: "Quiz deleted successfully",
