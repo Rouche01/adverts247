@@ -1,16 +1,20 @@
 require('../src/models/User');
 require('../src/models/Message');
 require('../src/models/Quiz.js');
+require('../src/models/Rider');
 
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+
 const authRoutes = require('./routes/authRoutes');
 const driverRoutes = require('./routes/driverRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const mediaBucketRoutes = require('./routes/mediaBucketRoutes');
 const quizRoutes = require('./routes/quizRoutes');
+const riderRoutes = require('./routes/riderRoutes');
+
 const requireAuth = require('./middlewares/requireAuth');
 require('dotenv').config();
 
@@ -23,6 +27,7 @@ app.use(driverRoutes);
 app.use(messageRoutes);
 app.use(mediaBucketRoutes);
 app.use(quizRoutes);
+app.use(riderRoutes);
 
 app.get('/', requireAuth, (req, res) => {
     res.send('Welcome to Adverts 247 Rest API');
