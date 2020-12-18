@@ -62,13 +62,13 @@ router.get('/rider/:rider_email', async(req, res) => {
     try {
         const riderExist = await Rider.findOne({ email: rider_email });
         if(!riderExist) {
-            return res.status(400).json({
-                status: false,
+            return res.status(200).json({
+                existStatus: false,
                 message: "This rider does not exist"
             });
         }
         res.status(200).json({
-            status: true,
+            existStatus: true,
             rider: riderExist
         });
     } catch(err) {
@@ -148,7 +148,7 @@ router.patch('/rider/:rider_id', async(req, res) => {
     }
 
 
-})
+});
 
 
 module.exports = router;
