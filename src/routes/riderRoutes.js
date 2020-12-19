@@ -17,17 +17,18 @@ router.post('/riders', requireAuth, async(req, res) => {
         });
     }
 
-    const rider = new Rider({
+    const newRider = new Rider({
         fullname,
         email,
         phoneNumber
     });
 
     try {
-        await rider.save();
+        const rider =  await newRider.save();
         res.status(200).json({
             status: true,
-            message: "New rider registered successfully!"
+            message: "New rider registered successfully!",
+            rider
         })
     } catch(err) {
         res.status(500).json({
