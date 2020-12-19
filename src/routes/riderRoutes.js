@@ -2,25 +2,25 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
+const deleteTriviaSessions = require('../middlewares/deleteRelatedSessions');
 
 const Rider = mongoose.model('Rider');
 
 
 router.post('/riders', requireAuth, async(req, res) => {
-    const { fullname, email, phoneNumber, triviaSessions } = req.body;
+    const { fullname, email, phoneNumber } = req.body;
 
     if(!fullname || !email || !phoneNumber) {
         return res.status(400).json({
             status: false,
-            message: 'You are not entering the required data'
+            message: 'You have to provide fullname, email and phoneNumber'
         });
     }
 
     const rider = new Rider({
         fullname,
         email,
-        phoneNumber,
-        triviaSessions
+        phoneNumber
     });
 
     try {
@@ -80,7 +80,7 @@ router.get('/rider/:rider_email', async(req, res) => {
 });
 
 
-router.delete('/rider/:rider_id', async(req, res) => {
+router.delete('/rider/:rider_id', deleteTriviaSessions, async(req, res) => {
     const { rider_id } = req.params;
 
     try {
@@ -107,9 +107,9 @@ router.delete('/rider/:rider_id', async(req, res) => {
 
 
 router.patch('/rider/:rider_id', async(req, res) => {
-    const { phoneNumber, fullname, triviaSessions } = req.body;
+    const { phoneNumber, fullname } = req.body;
 
-    if(!phoneNumber && !fullname && !triviaSessions) {
+    if(!phoneNumber && !fullname) {
         return res.status(400).json({
           status: false,
           message: err.message  
@@ -125,9 +125,9 @@ router.patch('/rider/:rider_id', async(req, res) => {
     }
 
     let newValues = { $set: { } };
-    const updatables = { phoneNumber, fullname, triviaSessions };
+    const updatables = { phoneNumber, fullname };
 
-    for (key in updatables) {
+    for (const key in updatables) {
         if(updatables[key]) {
             newValues.$set[key] = updatables[key];
         }

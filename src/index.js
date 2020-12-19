@@ -2,6 +2,7 @@ require('../src/models/User');
 require('../src/models/Message');
 require('../src/models/Quiz.js');
 require('../src/models/Rider');
+require('../src/models/TriviaSession');
 
 const express = require('express');
 const app = express();
@@ -14,6 +15,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const mediaBucketRoutes = require('./routes/mediaBucketRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const riderRoutes = require('./routes/riderRoutes');
+const triviaSessionRoutes = require('./routes/triviaSessionRoutes');
 
 const requireAuth = require('./middlewares/requireAuth');
 require('dotenv').config();
@@ -28,6 +30,7 @@ app.use(messageRoutes);
 app.use(mediaBucketRoutes);
 app.use(quizRoutes);
 app.use(riderRoutes);
+app.use(triviaSessionRoutes);
 
 app.get('/', requireAuth, (req, res) => {
     res.send('Welcome to Adverts 247 Rest API');
