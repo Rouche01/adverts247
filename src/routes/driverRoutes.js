@@ -156,12 +156,12 @@ router.patch('/driver/:driver_id/switch-stream', requireAuth, async(req, res) =>
             });
         }
 
-        if(driverExist.role !== 'driver') {
-            return res.status(401).json({
-                status: false,
-                message: "This user does not have access to this route"
-            });
-        }
+        // if(driverExist.role !== 'driver') {
+        //     return res.status(401).json({
+        //         status: false,
+        //         message: "This user does not have access to this route"
+        //     });
+        // }
 
         const { deviceStatus } = driverExist;
         console.log(deviceStatus);
