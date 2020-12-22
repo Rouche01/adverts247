@@ -60,6 +60,10 @@ const userSchema = new mongoose.Schema ({
         type: String,
         default: ''
     },
+    deviceStatus: {
+        type: String,
+        default: 'off'
+    },
     bankInformation: bankInfoSchema,
 }, { timestamps: true });
 

@@ -38,6 +38,40 @@ router.get('/drivers', async(req, res) => {
 })
 
 
+router.get('/driver/:driver_id', async(req, res) => {
+    const { driver_id } = req.params;
+
+    try {
+        const driver = await User.findOne({ _id: driver_id });
+
+        if(!driver) {
+            return res.status(404).json({
+                status: false,
+                message: "This driver does not exist"
+            });
+        }
+
+        if(driver.role !== 'driver') {
+            return res.status(401).json({
+                status: false,
+                message: "This user is not a driver"
+            });
+        }
+
+        res.status(200).json({
+            status: true,
+            driver
+        })
+
+    } catch(err) {
+        res.status(500).json({
+            status: false,
+            message: err.message
+        });
+    }
+});
+
+
 // @route patch /drivers/:id
 // @desc update a user's details
 // @access Private
@@ -106,6 +140,53 @@ router.patch('/drivers/:id', requireAuth, async(req, res) => {
             error: 'Unable to update the user'
         })
     }
+});
+
+
+router.patch('/driver/:driver_id/switch-stream', requireAuth, async(req, res) => {
+    const { driver_id } = req.params;
+
+    try {
+        const driverExist = await User.findOne({ _id: driver_id });
+
+        if(!driverExist) {
+            return res.status(404).json({
+                status: false,
+                message: "This driver does not exist"
+            });
+        }
+
+        if(driverExist.role !== 'driver') {
+            return res.status(401).json({
+                status: false,
+                message: "This user does not have access to this route"
+            });
+        }
+
+        const { deviceStatus } = driverExist;
+        console.log(deviceStatus);
+        let newValues = { $set: { } };
+        
+        if(deviceStatus === 'off') {
+            newValues.$set.deviceStatus = 'on';
+        } else if(deviceStatus === 'on') {
+            newValues.$set.deviceStatus = 'off';
+        }
+
+        const response = await User.updateOne({ _id: driver_id }, newValues);
+        
+        res.status(200).json({
+            status: true,
+            message: 'Driver device updated successfully',
+            data: response
+        })
+    } catch(err) {
+        res.status(500).json({
+            status: false,
+            message: err.message
+        })
+    }
+    
 })
 
 
