@@ -145,6 +145,14 @@ router.patch('/drivers/:id', requireAuth, async(req, res) => {
 
 router.patch('/driver/:driver_id/switch-stream', requireAuth, async(req, res) => {
     const { driver_id } = req.params;
+    const { deviceStatus } = req.body;
+
+    if(!deviceStatus) {
+        return res.status(401).json({
+            status: false,
+            message: "No data was sent along request"
+        });
+    }
 
     try {
         const driverExist = await User.findOne({ _id: driver_id });
@@ -163,15 +171,15 @@ router.patch('/driver/:driver_id/switch-stream', requireAuth, async(req, res) =>
         //     });
         // }
 
-        const { deviceStatus } = driverExist;
-        console.log(deviceStatus);
+        // const { deviceStatus } = driverExist;
         let newValues = { $set: { } };
+        newValues.$set.deviceStatus = deviceStatus;
         
-        if(deviceStatus === 'off') {
-            newValues.$set.deviceStatus = 'on';
-        } else if(deviceStatus === 'on') {
-            newValues.$set.deviceStatus = 'off';
-        }
+        // if(deviceStatus === 'off') {
+        //     newValues.$set.deviceStatus = 'on';
+        // } else if(deviceStatus === 'on') {
+        //     newValues.$set.deviceStatus = 'off';
+        // }
 
         const response = await User.updateOne({ _id: driver_id }, newValues);
         
