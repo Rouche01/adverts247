@@ -39,7 +39,7 @@ router.post('/drivers/signup', async (req, res) => {
         });
     } catch(err) {
         res.status(400).send({
-            error: `unable to register, ${err}`
+            error: err.message
         })
     }
 
