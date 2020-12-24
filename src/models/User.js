@@ -10,7 +10,15 @@ const bankInfoSchema = new mongoose.Schema({
     accountNumber: String,
     accountName: String,
     recipientCode: String
-})
+});
+
+
+const extraInfoSchema = new mongoose.Schema({
+    favouriteMeal: String,
+    favouriteHobby: String,
+    askMeAbout: String,
+    vacationSpot: String
+});
 
 
 const userSchema = new mongoose.Schema ({
@@ -64,6 +72,7 @@ const userSchema = new mongoose.Schema ({
         type: String,
         default: 'off'
     },
+    extraInfo: extraInfoSchema,
     bankInformation: bankInfoSchema,
 }, { timestamps: true });
 
