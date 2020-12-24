@@ -12,10 +12,11 @@ router.post('/drivers/signup', async (req, res) => {
         phoneNumber,
         password,
         city,
+        extraInfo,
         inviteCode
     } = req.body;
 
-    if( !email || !name || !phoneNumber || !password || !city ) {
+    if( !email || !name || !phoneNumber || !password || !city || !extraInfo ) {
         return res.status(422).send({ error: "You are not entering all the data required to sign up."})
     }
 
@@ -25,6 +26,7 @@ router.post('/drivers/signup', async (req, res) => {
         phoneNumber,
         password,
         city,
+        extraInfo,
         role: "driver"
     });
 
