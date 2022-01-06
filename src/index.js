@@ -7,6 +7,7 @@ require("../src/models/TriviaSession");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
 const driverRoutes = require("./routes/driverRoutes");
@@ -16,6 +17,8 @@ const quizRoutes = require("./routes/quizRoutes");
 const riderRoutes = require("./routes/riderRoutes");
 const triviaSessionRoutes = require("./routes/triviaSessionRoutes");
 
+const { seedRootAdmin } = require("../src/utils/seed-admin");
+
 const requireAuth = require("./middlewares/requireAuth");
 require("dotenv").config();
 
@@ -23,6 +26,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors())
 app.use(authRoutes);
 app.use(driverRoutes);
 app.use(messageRoutes);
@@ -46,8 +50,10 @@ mongoose.connect(process.env.MONGO_URI, {
   useCreateIndex: true,
 });
 
-mongoose.connection.on("connected", () => {
+mongoose.connection.on("connected", async () => {
   console.log("Successfully connected to mongo instance");
+  await seedRootAdmin();
+  console.log("Successfully added root admin");
 });
 
 mongoose.connection.on("error", (err) => {

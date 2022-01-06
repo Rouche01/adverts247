@@ -1,193 +1,203 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
-const User = mongoose.model('User');
-const requireAuth = require('../middlewares/requireAuth');
-
+const mongoose = require("mongoose");
+const User = mongoose.model("User");
+const { Driver } = require("../models/Driver");
+const requireAuth = require("../middlewares/requireAuth");
+const checkRole = require("../middlewares/checkRole");
 
 // @route get /driver
 // @desc Get a user with the token sent along the request
 // @access Private
-router.get('/driver', requireAuth, (req, res) => {
-    const user = req.user;
-    if(!user) {
-        return res.status(404).json({
-            error: 'User does not exist'
-        })
-    }
-    res.status(200).send({
-        user
-    })
-})
-
+router.get("/driver", requireAuth, checkRole("driver"), (req, res) => {
+  const user = req.user;
+  if (!user) {
+    return res.status(404).json({
+      error: "User does not exist",
+    });
+  }
+  res.status(200).send({
+    user,
+  });
+});
 
 // @route get /drivers
-// @desc Get all users 
+// @desc Get all users
 // @access Public
-router.get('/drivers', async(req, res) => {
-    try {
-        const users = await User.find({role: 'driver'});
-        res.status(200).send({
-            users
-        });
-    } catch(err) {
-        res.status(400).json({
-            error: 'There was an error retrieving the users'
-        })
-    }
-})
+router.get("/drivers", requireAuth, checkRole("admin"), async (req, res) => {
+  try {
+    const drivers = await Driver.find({ kind: "Driver" });
+    res.status(200).send({
+      drivers,
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: "There was an error retrieving the users",
+    });
+  }
+});
 
-
-router.get('/driver/:driver_id', async(req, res) => {
+router.get(
+  "/driver/:driver_id",
+  requireAuth,
+  checkRole("admin"),
+  async (req, res) => {
     const { driver_id } = req.params;
 
     try {
-        const driver = await User.findOne({ _id: driver_id });
+      const driver = await Driver.findOne({ _id: driver_id });
 
-        if(!driver) {
-            return res.status(404).json({
-                status: false,
-                message: "This driver does not exist"
-            });
-        }
-
-        if(driver.role !== 'driver') {
-            return res.status(401).json({
-                status: false,
-                message: "This user is not a driver"
-            });
-        }
-
-        res.status(200).json({
-            status: true,
-            driver
-        })
-
-    } catch(err) {
-        res.status(500).json({
-            status: false,
-            message: err.message
+      if (!driver) {
+        return res.status(404).json({
+          status: false,
+          message: "This driver does not exist",
         });
-    }
-});
+      }
 
+      res.status(200).json({
+        status: true,
+        driver,
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: false,
+        message: err.message,
+      });
+    }
+  }
+);
 
 // @route patch /drivers/:id
-// @desc update a user's details
+// @desc update a driver's details
 // @access Private
-router.patch('/drivers/:id', requireAuth, async(req, res) => {
-    const { profilePhoto, driversLicense, insuranceCert, 
-        vehicleReg, email, phoneNumber, bankInformation,
-        withdrawalCode } = req.body;
-    if(!profilePhoto && !driversLicense && !insuranceCert 
-        && !vehicleReg && !email && !phoneNumber && !bankInformation
-        && !withdrawalCode) {
-        return res.status(400).send({
-            error: 'No update was sent'
-        })
-    }
+router.patch("/drivers/:id", requireAuth, async (req, res) => {
+  const {
+    profilePhoto,
+    driversLicense,
+    insuranceCert,
+    vehicleReg,
+    email,
+    phoneNumber,
+    bankInformation,
+    withdrawalCode,
+  } = req.body;
+  if (
+    !profilePhoto &&
+    !driversLicense &&
+    !insuranceCert &&
+    !vehicleReg &&
+    !email &&
+    !phoneNumber &&
+    !bankInformation &&
+    !withdrawalCode
+  ) {
+    return res.status(400).send({
+      error: "No update was sent",
+    });
+  }
 
-    const user = await User.findOne({_id: req.params.id});
+  if (!req.params.id) {
+    return res.status(400).json({
+      error: "Driver id is required",
+    });
+  }
 
-    if(!user) {
-        return res.status(404).send({
-            error: 'User does not exist.'
-        })
-    }
+  const driver = await Driver.findOne({ _id: req.params.id });
 
-    let newValues = { $set: { } };
+  if (!driver) {
+    return res.status(404).send({
+      error: "Driver does not exist.",
+    });
+  }
 
-    if(profilePhoto) {
-        newValues.$set.profilePhoto = profilePhoto;
-    }
+  let newValues = { $set: {} };
 
-    if(driversLicense) {
-        newValues.$set.driversLicense = driversLicense;
-    }
+  if (profilePhoto) {
+    newValues.$set.profilePhoto = profilePhoto;
+  }
 
-    if(insuranceCert) {
-        newValues.$set.insuranceCert = insuranceCert;
-    }
+  if (driversLicense) {
+    newValues.$set.driversLicense = driversLicense;
+  }
 
-    if(vehicleReg) {
-        newValues.$set.vehicleReg = vehicleReg;
-    }
+  if (insuranceCert) {
+    newValues.$set.insuranceCert = insuranceCert;
+  }
 
-    if(email) {
-        newValues.$set.email = email;
-    }
+  if (vehicleReg) {
+    newValues.$set.vehicleReg = vehicleReg;
+  }
 
-    if(phoneNumber) {
-        newValues.$set.phoneNumber = phoneNumber;
-    }
+  if (email) {
+    newValues.$set.email = email;
+  }
 
-    if(bankInformation) {
-        newValues.$set.bankInformation = bankInformation;
-    }
+  if (phoneNumber) {
+    newValues.$set.phoneNumber = phoneNumber;
+  }
 
-    if(withdrawalCode) {
-        newValues.$set.withdrawalCode = withdrawalCode;
-    }
+  if (bankInformation) {
+    newValues.$set.bankInformation = bankInformation;
+  }
 
-    try {
-        const response = await User.updateOne({_id: user._id}, newValues);
-        res.status(200).send({
-            message: 'User updated successfully',
-            data: response
-        })
-    } catch(err) {
-        res.status(400).send({
-            error: 'Unable to update the user'
-        })
-    }
+  if (withdrawalCode) {
+    newValues.$set.withdrawalCode = withdrawalCode;
+  }
+
+  try {
+    const response = await Driver.updateOne({ _id: driver._id }, newValues);
+    res.status(200).send({
+      message: "Driver updated successfully",
+      data: response,
+    });
+  } catch (err) {
+    res.status(400).send({
+      error: "Unable to update the user",
+    });
+  }
 });
 
-
-router.patch('/driver/:driver_id/switch-stream', requireAuth, async(req, res) => {
+router.patch(
+  "/driver/:driver_id/switch-stream",
+  requireAuth,
+  checkRole("driver"),
+  async (req, res) => {
     const { driver_id } = req.params;
 
     try {
-        const driverExist = await User.findOne({ _id: driver_id });
+      const driverExist = await Driver.findOne({ _id: driver_id });
 
-        if(!driverExist) {
-            return res.status(404).json({
-                status: false,
-                message: "This driver does not exist"
-            });
-        }
+      if (!driverExist) {
+        return res.status(404).json({
+          status: false,
+          message: "This driver does not exist",
+        });
+      }
 
-        if(driverExist.role !== 'driver') {
-            return res.status(401).json({
-                status: false,
-                message: "This user does not have access to this route"
-            });
-        }
+      const { deviceStatus } = driverExist;
+      // console.log(deviceStatus);
+      let newValues = { $set: {} };
 
-        const { deviceStatus } = driverExist;
-        // console.log(deviceStatus);
-        let newValues = { $set: { } };
-        
-        if(deviceStatus === 'off') {
-            newValues.$set.deviceStatus = 'on';
-        } else if(deviceStatus === 'on') {
-            newValues.$set.deviceStatus = 'off';
-        }
+      if (deviceStatus === "off") {
+        newValues.$set.deviceStatus = "on";
+      } else if (deviceStatus === "on") {
+        newValues.$set.deviceStatus = "off";
+      }
 
-        const response = await User.updateOne({ _id: driver_id }, newValues);
-        
-        res.status(200).json({
-            status: true,
-            message: 'Driver device updated successfully',
-            data: response
-        })
-    } catch(err) {
-        res.status(500).json({
-            status: false,
-            message: err.message
-        })
+      const response = await Driver.updateOne({ _id: driver_id }, newValues);
+
+      res.status(200).json({
+        status: true,
+        message: "Driver device updated successfully",
+        data: response,
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: false,
+        message: err.message,
+      });
     }
-    
-})
-
+  }
+);
 
 module.exports = router;
