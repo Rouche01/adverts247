@@ -60,7 +60,9 @@ userSchema.methods.comparePassword = function (password) {
       }
 
       if (!isMatch) {
-        return reject(false);
+        return reject(
+          "The email address or password that you entered is not valid."
+        );
       }
 
       resolve(true);

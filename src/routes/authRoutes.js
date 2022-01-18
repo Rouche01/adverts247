@@ -2,8 +2,18 @@ const express = require("express");
 const router = express.Router();
 const { Driver } = require("../models/Driver");
 const { Admin } = require("../models/Admin");
+const { Advertiser } = require("../models/Advertiser");
 const jwt = require("jsonwebtoken");
+const { validationResult, body } = require("express-validator");
 require("dotenv").config();
+
+const {
+  advertiserRegisterFields,
+  classifyFieldFormat,
+  advertiserLoginFields,
+} = require("../utils/required-fields");
+const { errorFormatter } = require("../utils/error-formatter");
+const { route } = require("./driverRoutes");
 
 router.post("/drivers/signup", async (req, res) => {
   const { email, name, phoneNumber, password, city, extraInfo, inviteCode } =
@@ -148,7 +158,7 @@ router.post("/admin/signin", async (req, res) => {
     const admin = await Admin.findOne({ email });
     if (!admin) {
       return res.status(404).json({
-        error: `You are logging in  with wrong credentials`,
+        error: `The email address or password that you entered is not valid.`,
       });
     }
 
@@ -161,9 +171,103 @@ router.post("/admin/signin", async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({
-      error: `You are logging with wrong credentials`,
+      error: `The email address or password that you entered is not valid.`,
     });
   }
 });
+
+router.post(
+  "/advertiser/signup",
+  body(classifyFieldFormat(advertiserRegisterFields, "string")).isString(),
+  body(classifyFieldFormat(advertiserRegisterFields, "email")).isEmail(),
+  body(classifyFieldFormat(advertiserRegisterFields, "password")).isLength({
+    min: 8,
+    max: 22,
+  }),
+  async (req, res) => {
+    const error = validationResult(req);
+    const hasErrors = !error.isEmpty();
+    if (hasErrors) {
+      return res.status(400).send({ errors: errorFormatter(error.errors) });
+    }
+
+    const { email } = req.body;
+
+    try {
+      const existingAdvertiser = await Advertiser.findOne({ email });
+
+      if (existingAdvertiser) {
+        return res.status(400).send({
+          error: "An advertiser with this email already exists",
+        });
+      }
+
+      const advertiser = new Advertiser({
+        ...req.body,
+      });
+
+      await advertiser.save();
+      const token = jwt.sign(
+        { userId: advertiser.id },
+        process.env.TOKEN_SECRET_KEY
+      );
+
+      res.status(201).send({
+        message: "successfully registered!",
+        token,
+        user: advertiser,
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "Something went wrong with the server",
+      });
+    }
+  }
+);
+
+router.post(
+  "/advertiser/signin",
+  body(classifyFieldFormat(advertiserLoginFields, "email")).isEmail(),
+  body(classifyFieldFormat(advertiserLoginFields, "password")).isLength({
+    max: 22,
+    min: 8,
+  }),
+  async (req, res) => {
+    const error = validationResult(req);
+    const hasErrors = !error.isEmpty();
+
+    if (hasErrors) {
+      return res.status(400).send({
+        errors: errorFormatter(error.errors),
+      });
+    }
+
+    const { email, password } = req.body;
+
+    try {
+      const advertiser = await Advertiser.findOne({ email });
+      if (!advertiser) {
+        return res.status(400).send({
+          error: "The email address or password that you entered is not valid.",
+        });
+      }
+
+      await advertiser.comparePassword(password);
+      const token = jwt.sign(
+        { userId: advertiser.id },
+        process.env.TOKEN_SECRET_KEY
+      );
+      res.status(200).send({
+        message: "Advertiser signed in successfully.",
+        token,
+        user: advertiser,
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({ error: err });
+    }
+  }
+);
 
 module.exports = router;
