@@ -1,6 +1,9 @@
 {
   "name": "adverts247",
   "version": "1.0.0",
+  "engines": {
+    "node": "14.16.0"
+  },
   "description": "rest API for adverts 247",
   "main": "index.js",
   "scripts": {
