@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
 const { Driver } = require("../models/Driver");
 const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
@@ -40,7 +39,7 @@ router.get("/drivers", requireAuth, checkRole("admin"), async (req, res) => {
 router.get(
   "/driver/:driver_id",
   requireAuth,
-  checkRole("admin"),
+  checkRole(["admin", "driver"]),
   async (req, res) => {
     const { driver_id } = req.params;
 
@@ -71,11 +70,10 @@ router.get(
 // @desc update a driver's details
 // @access Private
 router.patch("/drivers/:id", requireAuth, async (req, res) => {
+  console.log("hit");
   const {
     profilePhoto,
-    driversLicense,
-    insuranceCert,
-    vehicleReg,
+    driversValidId,
     email,
     phoneNumber,
     bankInformation,
@@ -83,9 +81,7 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
   } = req.body;
   if (
     !profilePhoto &&
-    !driversLicense &&
-    !insuranceCert &&
-    !vehicleReg &&
+    !driversValidId &&
     !email &&
     !phoneNumber &&
     !bankInformation &&
@@ -116,16 +112,9 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     newValues.$set.profilePhoto = profilePhoto;
   }
 
-  if (driversLicense) {
-    newValues.$set.driversLicense = driversLicense;
-  }
-
-  if (insuranceCert) {
-    newValues.$set.insuranceCert = insuranceCert;
-  }
-
-  if (vehicleReg) {
-    newValues.$set.vehicleReg = vehicleReg;
+  if (driversValidId) {
+    newValues.$set.driversValidId = driversValidId;
+    newValues.$set.active = true;
   }
 
   if (email) {

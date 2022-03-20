@@ -1,27 +1,31 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const quizSchema = new mongoose.Schema({
+const quizSchema = new mongoose.Schema(
+  {
     quizImgUri: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     question: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     options: {
-        type: [String],
-        required: true
+      type: [String],
+      required: true,
     },
     answer: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     points: {
-        type: Number,
-        default: 2
-    }
-}, { timestamps: true });
+      type: Number,
+      default: 2,
+    },
+  },
+  { timestamps: true }
+);
 
+const Quiz = mongoose.model("Quiz", quizSchema);
 
-mongoose.model('Quiz', quizSchema);
+module.exports = { Quiz };

@@ -2,9 +2,8 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 
 const router = express.Router();
-const mongoose = require("mongoose");
 
-const Quiz = mongoose.model("Quiz");
+const { Quiz } = require("../models/Quiz");
 const { multerUploads, dataUri } = require("../middlewares/multer");
 const requireAuth = require("../middlewares/requireAuth");
 const {

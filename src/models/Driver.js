@@ -40,21 +40,13 @@ const driverSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    driversLicense: {
+    driversValidId: {
       type: String,
       default: "",
     },
-    insuranceCert: {
-      type: String,
-      default: "",
-    },
-    vehicleReg: {
-      type: String,
-      default: "",
-    },
-    deviceStatus: {
-      type: String,
-      default: "off",
+    active: {
+      type: Boolean,
+      default: false,
     },
     extraInfo: extraInfoSchema,
     bankInformation: bankInfoSchema,
