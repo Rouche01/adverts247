@@ -1,6 +1,6 @@
 module.exports = (requiredRole) => (req, res, next) => {
   const { kind } = req.user || { kind: "driver" };
-  console.log(requiredRole)
+
   if (
     kind.toLowerCase() !== requiredRole.toLowerCase() ||
     !requiredRole.includes(kind.toLowerCase())

@@ -1,3 +1,4 @@
+require("express-async-errors");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -14,8 +15,10 @@ const triviaSessionRoutes = require("./routes/triviaSessionRoutes");
 const streamRoutes = require("./routes/streamRoutes");
 
 const { seedRootAdmin } = require("../src/utils/seed-admin");
+const { transporter } = require("./utils/mailTransporter");
 
 const requireAuth = require("./middlewares/requireAuth");
+const { errorHandler } = require("./middlewares/errorHandler");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 3001;
@@ -35,6 +38,22 @@ app.use("/api", streamRoutes);
 app.get("/", requireAuth, (req, res) => {
   res.send("Welcome to Adverts 247 Rest API");
 });
+
+app.post("/api/testemail", async (req, res) => {
+  const info = await transporter.sendMail({
+    from: '"Soji from Adverts247" <soji@adverts247.ca>',
+    to: "richardemate@gmail.com",
+    subject: "Welcome to Adverts247",
+    text: "This is a test",
+    html: "<b>This is a test</b>",
+  });
+
+  console.log("Message sent: %s", info.messageId);
+
+  res.send("done");
+});
+
+app.use(errorHandler);
 
 const start = async () => {
   await redisClient.connect();

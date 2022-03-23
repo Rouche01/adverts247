@@ -1,122 +1,94 @@
 const express = require("express");
+const { body } = require("express-validator");
 const router = express.Router();
 const requireAuth = require("../middlewares/requireAuth");
 const deleteTriviaSessions = require("../middlewares/deleteRelatedSessions");
 
 const { Rider } = require("../models/Rider");
+const { riderFields } = require("../utils/required-fields");
+const { classifyFieldFormat } = require("../utils/required-fields");
 
-router.post("/riders", requireAuth, async (req, res) => {
-  const { fullname, email, phoneNumber } = req.body;
+const validateRequest = require("../middlewares/validateRequest");
+const { CustomError } = require("../utils/error");
 
-  if (!fullname || !email || !phoneNumber) {
-    return res.status(400).json({
-      status: false,
-      message: "You have to provide fullname, email and phoneNumber",
+router.post(
+  "/riders",
+  requireAuth,
+  body(classifyFieldFormat(riderFields, "email")).isEmail(),
+  body(classifyFieldFormat(riderFields, "string")).isString(),
+  validateRequest,
+  async (req, res) => {
+    const { fullname, email, phoneNumber } = req.body;
+
+    const newRider = new Rider({
+      fullname,
+      email,
+      phoneNumber,
     });
-  }
 
-  const newRider = new Rider({
-    fullname,
-    email,
-    phoneNumber,
-  });
-
-  try {
     const rider = await newRider.save();
     res.status(200).json({
       status: true,
       message: "New rider registered successfully!",
       rider,
     });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
   }
-});
+);
 
 router.get("/riders", requireAuth, async (req, res) => {
-  try {
-    const riders = await Rider.find();
-    const number = riders.length;
-    res.status(200).json({
-      status: true,
-      riders,
-      number,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
-  }
+  const riders = await Rider.find();
+  const number = riders.length;
+  res.status(200).json({
+    status: true,
+    riders,
+    number,
+  });
 });
 
-router.get("/rider/:rider_email", async (req, res) => {
-  const { rider_email } = req.params;
+router.get("/rider/:riderEmail", async (req, res) => {
+  const { riderEmail } = req.params;
 
-  try {
-    const riderExist = await Rider.findOne({ email: rider_email });
-    if (!riderExist) {
-      return res.status(200).json({
-        existStatus: false,
-        message: "This rider does not exist",
-      });
-    }
-    res.status(200).json({
-      existStatus: true,
-      rider: riderExist,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
+  const riderExist = await Rider.findOne({ email: riderEmail });
+  if (!riderExist) {
+    return res.status(200).json({
+      existStatus: false,
+      message: "This rider does not exist",
     });
   }
+  res.status(200).json({
+    existStatus: true,
+    rider: riderExist,
+  });
 });
 
-router.delete("/rider/:rider_id", deleteTriviaSessions, async (req, res) => {
-  const { rider_id } = req.params;
+router.delete("/rider/:riderId", deleteTriviaSessions, async (req, res) => {
+  const { riderId } = req.params;
 
-  try {
-    const riderExist = await Rider.findOne({ _id: rider_id });
-    if (!riderExist) {
-      return res.status(404).json({
-        status: false,
-        message: "This rider does not exist",
-      });
-    }
-    await Rider.deleteOne({ _id: rider_id });
-    res.status(200).json({
-      status: true,
-      message: "Rider deleted successfully",
-      deletedRider: riderExist,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
-  }
-});
-
-router.patch("/rider/:rider_id", async (req, res) => {
-  const { phoneNumber, fullname } = req.body;
-
-  if (!phoneNumber && !fullname) {
-    return res.status(400).json({
-      status: false,
-      message: err.message,
-    });
-  }
-
-  const riderExist = await Rider.findOne({ _id: req.params.rider_id });
+  const riderExist = await Rider.findById(riderId);
   if (!riderExist) {
     return res.status(404).json({
       status: false,
-      message: "Rider does not exist",
+      message: "This rider does not exist",
     });
+  }
+  await Rider.deleteOne({ _id: rider_id });
+  res.status(200).json({
+    status: true,
+    message: "Rider deleted successfully",
+    deletedRider: riderExist,
+  });
+});
+
+router.patch("/rider/:riderId", async (req, res) => {
+  const { phoneNumber, fullname } = req.body;
+
+  if (!phoneNumber && !fullname) {
+    throw new CustomError(400, "No data in body");
+  }
+
+  const riderExist = await Rider.findById(req.params.riderId);
+  if (!riderExist) {
+    throw new CustomError(404, "Rider does not exist");
   }
 
   let newValues = { $set: {} };
@@ -128,22 +100,15 @@ router.patch("/rider/:rider_id", async (req, res) => {
     }
   }
 
-  try {
-    const response = await Rider.updateOne(
-      { _id: req.params.rider_id },
-      newValues
-    );
-    res.status(200).json({
-      status: true,
-      message: "Rider updated successfully",
-      data: response,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
-  }
+  const response = await Rider.updateOne(
+    { _id: req.params.rider_id },
+    newValues
+  );
+  res.status(200).json({
+    status: true,
+    message: "Rider updated successfully",
+    data: response,
+  });
 });
 
 module.exports = router;

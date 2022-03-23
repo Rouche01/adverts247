@@ -8,35 +8,48 @@ const advertiserRegisterFields = [
   { phoneNumber: "string" },
 ];
 
-const advertiserLoginFields = [{ email: "email" }, { password: "password" }];
+const driverRegisterFields = [
+  { email: "email" },
+  { name: "string" },
+  { phoneNumber: "string" },
+  { password: "password" },
+  { city: "string" },
+  { extraInfo: "object" },
+];
+
+const adminRegisterFields = [
+  { email: "email" },
+  { username: "string" },
+  { password: "password" },
+];
+
+const riderFields = [
+  { fullname: "string" },
+  { email: "email" },
+  { phoneNumber: "string" },
+];
+
+const triviaSessionFields = [
+  { userId: "string" },
+  { totalPoints: "number" },
+  { questions: "number" },
+  { answeredCorrectly: "number" },
+];
+
+const loginFields = [{ email: "email" }, { password: "password" }];
 
 const classifyFieldFormat = (requiredFields, format) => {
-  switch (format) {
-    case "string":
-      return requiredFields
-        .filter((field) => Object.values(field)[0] === "string")
-        .map((field) => Object.keys(field)[0]);
-    case "number":
-      return requiredFields
-        .filter((field) => Object.values(field)[0] === "number")
-        .map((field) => Object.keys(field)[0]);
-
-    case "password":
-      return requiredFields
-        .filter((field) => Object.values(field)[0] === "password")
-        .map((field) => Object.keys(field)[0]);
-
-    case "email":
-      return requiredFields
-        .filter((field) => Object.values(field)[0] === "email")
-        .map((field) => Object.keys(field)[0]);
-    default:
-      return [];
-  }
+  return requiredFields
+    .filter((field) => Object.values(field)[0] === format)
+    .map((field) => Object.keys(field)[0]);
 };
 
 module.exports = {
   advertiserRegisterFields,
   classifyFieldFormat,
-  advertiserLoginFields,
+  loginFields,
+  driverRegisterFields,
+  adminRegisterFields,
+  riderFields,
+  triviaSessionFields,
 };

@@ -1,83 +1,66 @@
 const express = require("express");
+const { body } = require("express-validator");
 
 const router = express.Router();
 const { TriviaSession } = require("../models/TriviaSession");
 const { Rider } = require("../models/Rider");
 
 const requireAuth = require("../middlewares/requireAuth");
+const validateRequest = require("../middlewares/validateRequest");
+
+const {
+  classifyFieldFormat,
+  triviaSessionFields,
+} = require("../utils/required-fields");
+const { CustomError } = require("../utils/error");
+
 router.use(requireAuth);
 
-router.post("/trivia-sessions", async (req, res) => {
-  const { userId, totalPoints, questions, answeredCorrectly } = req.body;
+router.post(
+  "/trivia-sessions",
+  body(classifyFieldFormat(triviaSessionFields, "string")).isString(),
+  body(classifyFieldFormat(triviaSessionFields, "number")).isNumeric(),
+  validateRequest,
+  async (req, res) => {
+    const { userId, totalPoints, questions, answeredCorrectly } = req.body;
 
-  if (!userId || !totalPoints || !questions || !answeredCorrectly) {
-    return res.status(400).json({
-      status: false,
-      message:
-        "You have to provide userId, totalPoints, questions, and answeredCorrectly values",
+    const triviaSession = new TriviaSession({
+      userId,
+      totalPoints,
+      questions,
+      answeredCorrectly,
     });
-  }
 
-  const triviaSession = new TriviaSession({
-    userId,
-    totalPoints,
-    questions,
-    answeredCorrectly,
-  });
-
-  try {
     const session = await triviaSession.save();
     res.status(200).json({
       status: true,
       message: "The trivia session is created successfully!",
       session,
     });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
   }
-});
+);
 
 router.get("/trivia-sessions", async (req, res) => {
-  try {
-    const triviaSessions = await TriviaSession.find();
-    res.status(200).json({
-      status: true,
-      triviaSessions,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
-  }
+  const triviaSessions = await TriviaSession.find();
+  res.status(200).json({
+    status: true,
+    triviaSessions,
+  });
 });
 
-router.get("/rider/:rider_id/trivia-sessions", async (req, res) => {
-  const { rider_id } = req.params;
+router.get("/rider/:riderId/trivia-sessions", async (req, res) => {
+  const { riderId } = req.params;
 
-  const riderExist = await Rider.findOne({ _id: rider_id });
+  const riderExist = await Rider.findById(riderId);
   if (!riderExist) {
-    return res.status(404).json({
-      status: false,
-      message: "Rider does not exist",
-    });
+    throw new CustomError(404, "Rider does not exist");
   }
 
-  try {
-    const triviaSessions = await TriviaSession.find({ userId: rider_id });
-    res.status(200).json({
-      status: true,
-      triviaSessions,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: err.message,
-    });
-  }
+  const triviaSessions = await TriviaSession.find({ userId: rider_id });
+  res.status(200).json({
+    status: true,
+    triviaSessions,
+  });
 });
 
 module.exports = router;
