@@ -5,7 +5,7 @@ const fs = require("fs");
 const transporter = nodemailer.createTransport({
   host: "smtp.mailersend.net",
   port: 587,
-  secure: true, // upgrade later with STARTTLS
+  secure: false, // upgrade later with STARTTLS
   auth: {
     user: "MS_m2EtTY@adverts247.com",
     pass: "IcYhYuIRRzEWlAGp",
