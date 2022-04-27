@@ -2,6 +2,7 @@ require("express-async-errors");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const path = require("path");
 const cors = require("cors");
 const { redisClient } = require("./utils/redisClient");
 
@@ -15,9 +16,12 @@ const triviaSessionRoutes = require("./routes/triviaSessionRoutes");
 const streamRoutes = require("./routes/streamRoutes");
 
 const { seedRootAdmin } = require("../src/utils/seed-admin");
-const { transporter } = require("./utils/mailTransporter");
+const {
+  transporter,
+  replaceTemplateLiterals,
+} = require("./utils/mailTransporter");
 
-const requireAuth = require("./middlewares/requireAuth");
+// const requireAuth = require("./middlewares/requireAuth");
 const { errorHandler } = require("./middlewares/errorHandler");
 require("dotenv").config();
 
@@ -35,17 +39,24 @@ app.use("/api", riderRoutes);
 app.use("/api", triviaSessionRoutes);
 app.use("/api", streamRoutes);
 
-app.get("/", requireAuth, (req, res) => {
+app.get("/", (req, res) => {
   res.send("Welcome to Adverts 247 Rest API");
 });
 
-app.post("/api/testemail", async (req, res) => {
+app.post("/testemail", async (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "./email-templates/register-confirm.html"
+  );
+  const htmlToSend = replaceTemplateLiterals(filePath, {
+    firstname: "Richard",
+  });
   const info = await transporter.sendMail({
-    from: '"Soji from Adverts247" <soji@adverts247.ca>',
+    from: '"Soji from Adverts247" <soji@adverts247.com>',
     to: "richardemate@gmail.com",
     subject: "Welcome to Adverts247",
     text: "This is a test",
-    html: "<b>This is a test</b>",
+    html: htmlToSend,
   });
 
   console.log("Message sent: %s", info.messageId);
@@ -56,8 +67,8 @@ app.post("/api/testemail", async (req, res) => {
 app.use(errorHandler);
 
 const start = async () => {
-  await redisClient.connect();
-  redisClient.on("error", (error) => console.log(error));
+  // await redisClient.connect();
+  // redisClient.on("error", (error) => console.log(error));
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,

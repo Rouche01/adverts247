@@ -7,6 +7,12 @@ const { Advertiser } = require("../models/Advertiser");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+// email-sending util functions
+const {
+  transporter,
+  replaceTemplateLiterals,
+} = require("../utils/mailTransporter");
+
 const {
   advertiserRegisterFields,
   classifyFieldFormat,
@@ -59,6 +65,30 @@ router.post(
 
     await driver.save();
     const token = jwt.sign({ userId: driver.id }, process.env.TOKEN_SECRET_KEY);
+
+    // send confirmation email
+    const filePath = path.join(
+      __dirname,
+      "../email-templates/register-confirm.html"
+    );
+    const htmlToSend = replaceTemplateLiterals(filePath, {
+      firstname: name.split(" ")[0],
+    });
+    try {
+      await transporter.sendMail({
+        from: '"Soji from Adverts247" <soji@adverts247.ca>',
+        to: email,
+        subject: "Welcome to Adverts247",
+        text: "This is a test",
+        html: htmlToSend,
+      });
+    } catch (err) {
+      res.status(201).send({
+        message: "successfully registered!",
+        token,
+      });
+    }
+
     res.status(201).send({
       message: "successfully registered!",
       token,
