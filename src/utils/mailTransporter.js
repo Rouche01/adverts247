@@ -1,14 +1,15 @@
 const nodemailer = require("nodemailer");
 const handlebars = require("handlebars");
 const fs = require("fs");
+require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.mailersend.net",
+  host: process.env.SMTP_HOST,
   port: 587,
   secure: false, // upgrade later with STARTTLS
   auth: {
-    user: "MS_m2EtTY@adverts247.com",
-    pass: "IcYhYuIRRzEWlAGp",
+    user: process.env.SMTP_USERNAME,
+    pass: process.env.SMTP_PASSWORD,
   },
 });
 
