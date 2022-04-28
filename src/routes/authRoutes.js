@@ -5,7 +5,15 @@ const { Driver } = require("../models/Driver");
 const { Admin } = require("../models/Admin");
 const { Advertiser } = require("../models/Advertiser");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const path = require("path");
 require("dotenv").config();
+
+// email-sending util functions
+const {
+  transporter,
+  replaceTemplateLiterals,
+} = require("../utils/mailTransporter");
 
 const {
   advertiserRegisterFields,
@@ -13,10 +21,14 @@ const {
   driverRegisterFields,
   loginFields,
   adminRegisterFields,
+  verifyTokenFields,
 } = require("../utils/required-fields");
 const { CustomError } = require("../utils/error");
+const generateRandomToken = require("../utils/generateRandomToken");
 
 const validateRequest = require("../middlewares/validateRequest");
+const { User } = require("../models/User");
+const { Token } = require("../models/Token");
 
 router.post(
   "/drivers/signup",
@@ -59,6 +71,30 @@ router.post(
 
     await driver.save();
     const token = jwt.sign({ userId: driver.id }, process.env.TOKEN_SECRET_KEY);
+
+    // send confirmation email
+    const filePath = path.join(
+      __dirname,
+      "../email-templates/register-confirm.html"
+    );
+    const htmlToSend = replaceTemplateLiterals(filePath, {
+      firstname: name.split(" ")[0],
+    });
+    try {
+      await transporter.sendMail({
+        from: '"Soji from Adverts247" <soji@adverts247.ca>',
+        to: email,
+        subject: "Welcome to Adverts247",
+        text: "This is a test",
+        html: htmlToSend,
+      });
+    } catch (err) {
+      res.status(201).send({
+        message: "successfully registered!",
+        token,
+      });
+    }
+
     res.status(201).send({
       message: "successfully registered!",
       token,
@@ -82,7 +118,11 @@ router.post(
       throw new CustomError(400, "You are logging with wrong credentials");
     }
 
-    await driver.comparePassword(password);
+    try {
+      await driver.comparePassword(password);
+    } catch (err) {
+      throw new CustomError(400, "You are logging with wrong credentials");
+    }
     const token = jwt.sign({ userId: driver.id }, process.env.TOKEN_SECRET_KEY);
 
     res.status(200).send({
@@ -149,7 +189,12 @@ router.post(
       );
     }
 
-    await admin.comparePassword(password);
+    try {
+      await admin.comparePassword(password);
+    } catch (err) {
+      throw new CustomError(400, "You are logging with wrong credentials");
+    }
+
     const token = jwt.sign({ userId: admin.id }, process.env.TOKEN_SECRET_KEY);
     res.status(200).json({
       message: "Admin signed in successfully.",
@@ -224,6 +269,120 @@ router.post(
       token,
       user: advertiser,
     });
+  }
+);
+
+router.post(
+  "/request-reset-token",
+  body("email").isEmail(),
+  validateRequest,
+  async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      throw new CustomError(
+        400,
+        "The user does not exist. Check if you're entering the correct email and try again"
+      );
+    }
+
+    const token = await Token.findOne({ userId: user.id });
+    if (token) {
+      await token.deleteOne();
+    }
+    const resetToken = generateRandomToken();
+    const hash = await bcrypt.hash(
+      resetToken,
+      Number(process.env.BCRYPT_TOKEN_SALT)
+    );
+
+    await new Token({
+      userId: user.id,
+      token: hash,
+      createdAt: Date.now(),
+    }).save();
+
+    const filePath = path.join(
+      __dirname,
+      "../email-templates/reset-password.html"
+    );
+    const htmlToSend = replaceTemplateLiterals(filePath, {
+      resetToken,
+    });
+
+    await transporter.sendMail({
+      from: '"Adverts247" <contact@adverts247.com>',
+      to: email,
+      subject: "Password reset for Adverts247",
+      html: htmlToSend,
+    });
+
+    res.status(200).json({ userId: user.id, token: hash });
+  }
+);
+
+router.post(
+  "/verify-reset-token",
+  body(classifyFieldFormat(verifyTokenFields, "string")).isString(),
+  validateRequest,
+  async (req, res) => {
+    const { token, userId } = req.body;
+
+    const passwordResetToken = await Token.findOne({ userId });
+    if (!passwordResetToken) {
+      throw new CustomError(
+        400,
+        "Expired password reset token, request for a new token"
+      );
+    }
+
+    const isValid = await bcrypt.compare(token, passwordResetToken.token);
+    if (!isValid) {
+      throw new CustomError(400, "Invalid  password reset token");
+    }
+
+    await passwordResetToken.deleteOne();
+    res.status(200).send({ status: true, userId });
+  }
+);
+
+router.post(
+  "/reset-password",
+  body("userId").isString(),
+  body("password").isLength({
+    min: 8,
+    max: 22,
+  }),
+  validateRequest,
+  async (req, res) => {
+    const { password, userId } = req.body;
+
+    // const passwordResetToken = await Token.findOne({ userId });
+    // if (!passwordResetToken) {
+    //   throw new CustomError(
+    //     400,
+    //     "Expired password reset token, request for a new token"
+    //   );
+    // }
+
+    // const isValid = await bcrypt.compare(token, passwordResetToken.token);
+    // if (!isValid) {
+    //   throw new CustomError(400, "Invalid  password reset token");
+    // }
+
+    const hashingSalt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(password, hashingSalt);
+
+    await User.updateOne(
+      { _id: userId },
+      { $set: { password: newHashedPassword } },
+      { new: true }
+    );
+
+    // await passwordResetToken.deleteOne();
+    res.status(200).json({ status: true });
   }
 );
 

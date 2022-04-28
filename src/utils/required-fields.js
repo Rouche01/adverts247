@@ -38,6 +38,8 @@ const triviaSessionFields = [
 
 const loginFields = [{ email: "email" }, { password: "password" }];
 
+const verifyTokenFields = [{ token: "string" }, { userId: "string" }];
+
 const classifyFieldFormat = (requiredFields, format) => {
   return requiredFields
     .filter((field) => Object.values(field)[0] === format)
@@ -52,4 +54,5 @@ module.exports = {
   adminRegisterFields,
   riderFields,
   triviaSessionFields,
+  verifyTokenFields,
 };
