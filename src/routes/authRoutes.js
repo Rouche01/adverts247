@@ -21,7 +21,7 @@ const {
   driverRegisterFields,
   loginFields,
   adminRegisterFields,
-  resetPasswordFields,
+  verifyTokenFields,
 } = require("../utils/required-fields");
 const { CustomError } = require("../utils/error");
 const generateRandomToken = require("../utils/generateRandomToken");
@@ -282,7 +282,10 @@ router.post(
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new CustomError(400, "The user does not exist");
+      throw new CustomError(
+        400,
+        "The user does not exist. Check if you're entering the correct email and try again"
+      );
     }
 
     const token = await Token.findOne({ userId: user.id });
@@ -316,20 +319,16 @@ router.post(
       html: htmlToSend,
     });
 
-    res.status(200).json({ userId: user.id, token: resetToken });
+    res.status(200).json({ userId: user.id, token: hash });
   }
 );
 
 router.post(
-  "/reset-password",
-  body(classifyFieldFormat(resetPasswordFields, "string")).isString(),
-  body(classifyFieldFormat(resetPasswordFields, "password")).isLength({
-    min: 8,
-    max: 22,
-  }),
+  "/verify-reset-token",
+  body(classifyFieldFormat(verifyTokenFields, "string")).isString(),
   validateRequest,
   async (req, res) => {
-    const { token, userId, password } = req.body;
+    const { token, userId } = req.body;
 
     const passwordResetToken = await Token.findOne({ userId });
     if (!passwordResetToken) {
@@ -344,6 +343,35 @@ router.post(
       throw new CustomError(400, "Invalid  password reset token");
     }
 
+    await passwordResetToken.deleteOne();
+    res.status(200).send({ status: true, userId });
+  }
+);
+
+router.post(
+  "/reset-password",
+  body("userId").isString(),
+  body("password").isLength({
+    min: 8,
+    max: 22,
+  }),
+  validateRequest,
+  async (req, res) => {
+    const { password, userId } = req.body;
+
+    // const passwordResetToken = await Token.findOne({ userId });
+    // if (!passwordResetToken) {
+    //   throw new CustomError(
+    //     400,
+    //     "Expired password reset token, request for a new token"
+    //   );
+    // }
+
+    // const isValid = await bcrypt.compare(token, passwordResetToken.token);
+    // if (!isValid) {
+    //   throw new CustomError(400, "Invalid  password reset token");
+    // }
+
     const hashingSalt = await bcrypt.genSalt(10);
     const newHashedPassword = await bcrypt.hash(password, hashingSalt);
 
@@ -353,7 +381,7 @@ router.post(
       { new: true }
     );
 
-    await passwordResetToken.deleteOne();
+    // await passwordResetToken.deleteOne();
     res.status(200).json({ status: true });
   }
 );

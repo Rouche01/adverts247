@@ -38,11 +38,7 @@ const triviaSessionFields = [
 
 const loginFields = [{ email: "email" }, { password: "password" }];
 
-const resetPasswordFields = [
-  { token: "string" },
-  { userId: "string" },
-  { password: "password" },
-];
+const verifyTokenFields = [{ token: "string" }, { userId: "string" }];
 
 const classifyFieldFormat = (requiredFields, format) => {
   return requiredFields
@@ -58,5 +54,5 @@ module.exports = {
   adminRegisterFields,
   riderFields,
   triviaSessionFields,
-  resetPasswordFields,
+  verifyTokenFields,
 };
