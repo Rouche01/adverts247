@@ -5,6 +5,8 @@ const { Driver } = require("../models/Driver");
 const { Admin } = require("../models/Admin");
 const { Advertiser } = require("../models/Advertiser");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const path = require("path");
 require("dotenv").config();
 
 // email-sending util functions
@@ -21,8 +23,11 @@ const {
   adminRegisterFields,
 } = require("../utils/required-fields");
 const { CustomError } = require("../utils/error");
+const generateRandomToken = require("../utils/generateRandomToken");
 
 const validateRequest = require("../middlewares/validateRequest");
+const { User } = require("../models/User");
+const { Token } = require("../models/Token");
 
 router.post(
   "/drivers/signup",
@@ -254,6 +259,54 @@ router.post(
       token,
       user: advertiser,
     });
+  }
+);
+
+router.post(
+  "/request-reset-token",
+  body("email").isEmail(),
+  validateRequest,
+  async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      throw new CustomError(400, "The user does not exist");
+    }
+
+    const token = await Token.findOne({ userId: user.id });
+    if (token) {
+      await token.deleteOne();
+    }
+    const resetToken = generateRandomToken();
+    const hash = await bcrypt.hash(
+      resetToken,
+      Number(process.env.BCRYPT_TOKEN_SALT)
+    );
+
+    await new Token({
+      userId: user.id,
+      token: hash,
+      createdAt: Date.now(),
+    }).save();
+
+    const filePath = path.join(
+      __dirname,
+      "../email-templates/reset-password.html"
+    );
+    const htmlToSend = replaceTemplateLiterals(filePath, {
+      resetToken,
+    });
+
+    await transporter.sendMail({
+      from: '"Adverts247" <contact@adverts247.com>',
+      to: email,
+      subject: "Password reset for Adverts247",
+      html: htmlToSend,
+    });
+
+    res.status(200).json({ userId: user.id, token: resetToken });
   }
 );
 
