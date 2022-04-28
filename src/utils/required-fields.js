@@ -38,6 +38,12 @@ const triviaSessionFields = [
 
 const loginFields = [{ email: "email" }, { password: "password" }];
 
+const resetPasswordFields = [
+  { token: "string" },
+  { userId: "string" },
+  { password: "password" },
+];
+
 const classifyFieldFormat = (requiredFields, format) => {
   return requiredFields
     .filter((field) => Object.values(field)[0] === format)
@@ -52,4 +58,5 @@ module.exports = {
   adminRegisterFields,
   riderFields,
   triviaSessionFields,
+  resetPasswordFields,
 };

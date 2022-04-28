@@ -21,6 +21,7 @@ const {
   driverRegisterFields,
   loginFields,
   adminRegisterFields,
+  resetPasswordFields,
 } = require("../utils/required-fields");
 const { CustomError } = require("../utils/error");
 const generateRandomToken = require("../utils/generateRandomToken");
@@ -117,7 +118,11 @@ router.post(
       throw new CustomError(400, "You are logging with wrong credentials");
     }
 
-    await driver.comparePassword(password);
+    try {
+      await driver.comparePassword(password);
+    } catch (err) {
+      throw new CustomError(400, "You are logging with wrong credentials");
+    }
     const token = jwt.sign({ userId: driver.id }, process.env.TOKEN_SECRET_KEY);
 
     res.status(200).send({
@@ -184,7 +189,12 @@ router.post(
       );
     }
 
-    await admin.comparePassword(password);
+    try {
+      await admin.comparePassword(password);
+    } catch (err) {
+      throw new CustomError(400, "You are logging with wrong credentials");
+    }
+
     const token = jwt.sign({ userId: admin.id }, process.env.TOKEN_SECRET_KEY);
     res.status(200).json({
       message: "Admin signed in successfully.",
@@ -307,6 +317,44 @@ router.post(
     });
 
     res.status(200).json({ userId: user.id, token: resetToken });
+  }
+);
+
+router.post(
+  "/reset-password",
+  body(classifyFieldFormat(resetPasswordFields, "string")).isString(),
+  body(classifyFieldFormat(resetPasswordFields, "password")).isLength({
+    min: 8,
+    max: 22,
+  }),
+  validateRequest,
+  async (req, res) => {
+    const { token, userId, password } = req.body;
+
+    const passwordResetToken = await Token.findOne({ userId });
+    if (!passwordResetToken) {
+      throw new CustomError(
+        400,
+        "Expired password reset token, request for a new token"
+      );
+    }
+
+    const isValid = await bcrypt.compare(token, passwordResetToken.token);
+    if (!isValid) {
+      throw new CustomError(400, "Invalid  password reset token");
+    }
+
+    const hashingSalt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(password, hashingSalt);
+
+    await User.updateOne(
+      { _id: userId },
+      { $set: { password: newHashedPassword } },
+      { new: true }
+    );
+
+    await passwordResetToken.deleteOne();
+    res.status(200).json({ status: true });
   }
 );
 
