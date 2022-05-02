@@ -82,7 +82,7 @@ router.post(
     });
     try {
       await transporter.sendMail({
-        from: '"Soji from Adverts247" <soji@adverts247.ca>',
+        from: '"Adverts247" <support@adverts247.com>',
         to: email,
         subject: "Welcome to Adverts247",
         text: "This is a test",
@@ -313,7 +313,7 @@ router.post(
     });
 
     await transporter.sendMail({
-      from: '"Adverts247" <contact@adverts247.com>',
+      from: '"Adverts247" <support@adverts247.com>',
       to: email,
       subject: "Password reset for Adverts247",
       html: htmlToSend,
@@ -372,6 +372,8 @@ router.post(
     //   throw new CustomError(400, "Invalid  password reset token");
     // }
 
+    const user = await User.findById(userId);
+
     const hashingSalt = await bcrypt.genSalt(10);
     const newHashedPassword = await bcrypt.hash(password, hashingSalt);
 
@@ -380,6 +382,21 @@ router.post(
       { $set: { password: newHashedPassword } },
       { new: true }
     );
+
+    const filePath = path.join(
+      __dirname,
+      "../email-templates/reset-confirm.html"
+    );
+    const htmlToSend = replaceTemplateLiterals(filePath, {
+      firstname: user.name.split(" ")[0],
+    });
+
+    await transporter.sendMail({
+      from: '"Adverts247" <support@adverts247.com>',
+      to: user.email,
+      subject: "Password reset for Adverts247",
+      html: htmlToSend,
+    });
 
     // await passwordResetToken.deleteOne();
     res.status(200).json({ status: true });
