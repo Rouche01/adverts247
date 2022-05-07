@@ -60,6 +60,7 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     phoneNumber,
     bankInformation,
     withdrawalCode,
+    status,
   } = req.body;
   if (
     !profilePhoto &&
@@ -67,7 +68,8 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     !email &&
     !phoneNumber &&
     !bankInformation &&
-    !withdrawalCode
+    !withdrawalCode &&
+    !status
   ) {
     throw new CustomError(400, "No update was sent");
   }
@@ -90,7 +92,6 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
 
   if (driversValidId) {
     newValues.$set.driversValidId = driversValidId;
-    newValues.$set.active = true;
   }
 
   if (email) {
@@ -107,6 +108,10 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
 
   if (withdrawalCode) {
     newValues.$set.withdrawalCode = withdrawalCode;
+  }
+
+  if (status) {
+    newValues.$set.status = status;
   }
 
   const response = await Driver.updateOne({ _id: driver._id }, newValues);

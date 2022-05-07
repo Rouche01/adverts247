@@ -44,9 +44,10 @@ const driverSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    active: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      enum: ["incomplete", "pending", "approved", "suspended", "rejected"],
+      default: "incomplete",
     },
     extraInfo: extraInfoSchema,
     bankInformation: bankInfoSchema,
