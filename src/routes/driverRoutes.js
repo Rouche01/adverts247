@@ -114,6 +114,8 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     newValues.$set.status = status;
   }
 
+  console.log(newValues);
+
   const response = await Driver.updateOne({ _id: driver._id }, newValues);
   res.status(200).send({
     message: "Driver updated successfully",
