@@ -7,7 +7,6 @@ const options = {
     transform: (_doc, ret) => {
       ret.id = ret._id;
       delete ret._id;
-      delete ret.password;
     },
   },
 };
@@ -22,26 +21,31 @@ const campaignSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    impressions: {
-      type: Number,
-      default: 0,
-    },
-    interactions: {
-      type: Number,
-      default: 0,
-    },
-    vehicles: {
-      type: Number,
-      default: 0,
-    },
     status: {
       type: String,
-      enum: ["pending", "approved", "stopped"],
-      default: "pending",
+      enum: ["active", "closed", "paused"],
+      default: "active",
     },
     advertiser: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Advertiser",
+      type: String,
+      required: true,
+    },
+    adType: {
+      type: String,
+      enum: ["image", "video"],
+      required: true,
+    },
+    adBudget: {
+      type: Number,
+      required: true,
+    },
+    campaignMedia: {
+      type: String,
+      required: true,
+    },
+    duration: {
+      type: [Date],
+      length: 2,
     },
   },
   options

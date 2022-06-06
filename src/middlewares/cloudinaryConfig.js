@@ -1,4 +1,4 @@
-const {config, uploader } = require('cloudinary');
+const {config, uploader } = require('cloudinary').v2;
 require('dotenv').config();
 
 const cloudinaryConfig = (req, res, next) => {

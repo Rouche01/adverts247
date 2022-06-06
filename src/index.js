@@ -1,4 +1,5 @@
 require("express-async-errors");
+require("dotenv/config");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -14,6 +15,7 @@ const quizRoutes = require("./routes/quizRoutes");
 const riderRoutes = require("./routes/riderRoutes");
 const triviaSessionRoutes = require("./routes/triviaSessionRoutes");
 const streamRoutes = require("./routes/streamRoutes");
+const campaignRoutes = require("./routes/campaignRoutes")
 
 const { seedRootAdmin } = require("../src/utils/seed-admin");
 const {
@@ -25,13 +27,14 @@ const {
 const { errorHandler } = require("./middlewares/errorHandler");
 require("dotenv").config();
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3005;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/api", authRoutes);
 app.use("/api", driverRoutes);
+app.use("/api", campaignRoutes);
 app.use("/api", messageRoutes);
 app.use("/api", mediaBucketRoutes);
 app.use("/api", quizRoutes);
@@ -67,8 +70,8 @@ app.post("/testemail", async (req, res) => {
 app.use(errorHandler);
 
 const start = async () => {
-  await redisClient.connect();
-  redisClient.on("error", (error) => console.log(error));
+  // await redisClient.connect();
+  // redisClient.on("error", (error) => console.log(error));
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
