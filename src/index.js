@@ -15,7 +15,8 @@ const quizRoutes = require("./routes/quizRoutes");
 const riderRoutes = require("./routes/riderRoutes");
 const triviaSessionRoutes = require("./routes/triviaSessionRoutes");
 const streamRoutes = require("./routes/streamRoutes");
-const campaignRoutes = require("./routes/campaignRoutes")
+const campaignRoutes = require("./routes/campaignRoutes");
+const advertiserRoutes = require("./routes/advertiserRoutes");
 
 const { seedRootAdmin } = require("../src/utils/seed-admin");
 const {
@@ -34,6 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/api", authRoutes);
 app.use("/api", driverRoutes);
+app.use("/api", advertiserRoutes);
 app.use("/api", campaignRoutes);
 app.use("/api", messageRoutes);
 app.use("/api", mediaBucketRoutes);

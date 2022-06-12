@@ -1,8 +1,12 @@
 const express = require("express");
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
+const { omitBy, isNil } = require("lodash");
 const router = express.Router();
 
 const { Campaign } = require("../models/Campaign");
+const { CampaignStat } = require("../models/CampaignStat");
+const { CampaignAuditLog } = require("../models/CampaignAuditLog");
+const { Advertiser } = require("../models/Advertiser");
 const { ADMIN } = require("../constants/roles");
 
 const requireAuth = require("../middlewares/requireAuth");
@@ -22,13 +26,64 @@ const {
 } = require("../middlewares/cloudinaryConfig");
 const { IMAGE, VIDEO } = require("../constants/adType");
 const { uploadToMediaBucket } = require("../utils/mediaBucket");
+const {
+  ACTIVE,
+  PAUSED,
+  CLOSED,
+  CAMPAIGN_ACTIONS,
+} = require("../constants/campaign");
 
 router.use(requireAuth);
 router.use(checkRole(ADMIN));
 
-router.get("/campaigns", async (req, res) => {
-  const campaigns = await Campaign.find();
-  res.send(campaigns);
+router.get(
+  "/campaigns",
+  query("status").optional().isIn([ACTIVE, PAUSED, CLOSED]),
+  query("type").optional().isIn([IMAGE, VIDEO]),
+  query("advertiser").optional().isString(),
+  query("limit").optional().isNumeric(),
+  query("skip").optional().isNumeric(),
+  query("sortBy")
+    .optional()
+    .isIn(["createdAt", "adBudget"])
+    .withMessage("You can only sort by createdAt"),
+  query("orderBy").optional().isIn(["desc", "asc"]),
+  validateRequest,
+  async (req, res) => {
+    const { status, type, limit, skip, sortBy, orderBy, advertiser } =
+      req.query;
+
+    const sort = {};
+    const filterOptions = omitBy({ status, adType: type, advertiser }, isNil);
+    let paginationOptions = omitBy({ limit, skip }, isNil);
+
+    Object.entries(paginationOptions).forEach(
+      ([key, val]) => (paginationOptions[key] = parseInt(val))
+    );
+
+    if (sortBy && orderBy) {
+      sort[sortBy] = orderBy === "desc" ? -1 : 1;
+    }
+
+    const campaigns = await Campaign.find(filterOptions, null, {
+      ...paginationOptions,
+      sort,
+    })
+      .populate("advertiser")
+      .populate("campaignStat");
+
+    res.send({ campaigns, size: campaigns.length });
+  }
+);
+
+router.get("/campaigns/:campaignId", async (req, res) => {
+  const { campaignId } = req.params;
+  const campaign = await Campaign.findOne({ campaignID: campaignId })
+    .populate("advertiser")
+    .populate("campaignStat");
+
+  if (!campaign) throw new CustomError(404, "Campaign does not exist");
+  res.send(campaign);
 });
 
 router.post(
@@ -53,7 +108,7 @@ router.post(
     if (videoOrImg === IMAGE) {
       const file = dataUri(req).content;
       const { secure_url } = await uploader.upload(file, {
-        folder: "advert-247-app/ADS",
+        folder: "assets/CAMPAIGNS",
       });
       campaignMedia = secure_url;
     }
@@ -72,15 +127,98 @@ router.post(
       campaignMedia = data.Location;
     }
 
+    let advertiser;
+
+    const advertiserExists = await Advertiser.findOne({
+      companyName: req.body.advertiser,
+    });
+
+    if (advertiserExists) {
+      advertiser = advertiserExists;
+    } else {
+      advertiser = new Advertiser({
+        advertiserId: generateHashId({ prefix: "CU", length: 7 }),
+        email: "advertisers@adverts247.com",
+        password: process.env.ADVERTISERS_DEFAULT_PASSWORD,
+        companyName: req.body.advertiser,
+      });
+      await advertiser.save();
+    }
+
     const campaign = new Campaign({
       campaignID,
       campaignMedia,
       ...req.body,
       duration,
+      advertiser: advertiser.id,
     });
 
-    await campaign.save();
+    const campaignStat = new CampaignStat({
+      campaign: campaign.id,
+    });
+
+    campaign.campaignStat = campaignStat.id;
+
+    const campaignAuditLog = new CampaignAuditLog({
+      action: CAMPAIGN_ACTIONS.CREATED,
+      actor: req.user.id,
+      campaign: campaign.id,
+      from: "test",
+    });
+
+    advertiser.campaigns.push(campaign);
+
+    const session = await Campaign.startSession();
+    session.startTransaction();
+
+    const opts = { session };
+
+    await campaignStat.save(opts);
+    await campaign.save(opts);
+    await campaignAuditLog.save(opts);
+    await advertiser.save(opts);
+
+    await session.commitTransaction();
+    session.endSession();
+
     res.send(campaign);
+  }
+);
+
+router.patch(
+  "/campaigns/:campaignId",
+  body("adBudget").optional().isNumeric(),
+  body("duration").optional().isJSON(),
+  async (req, res) => {
+    const { campaignId } = req.params;
+    const { adBudget, duration } = req.body;
+
+    const campaign = await Campaign.findOne({ campaignID: campaignId });
+    if (!campaign) throw new CustomError(404, "Campaign does not exist");
+
+    const parsedDuration = duration ? JSON.parse(duration) : null;
+    const update = omitBy({ adBudget, duration: parsedDuration }, isNil);
+
+    await campaign.updateOne(update);
+    res.send({ message: "Campaign edited successfully." });
+  }
+);
+
+router.patch(
+  "/change-status/:campaignId",
+  body("status").isIn([ACTIVE, PAUSED, CLOSED]).withMessage("Invalid status"),
+  validateRequest,
+  async (req, res) => {
+    const { campaignId } = req.params;
+    const { status } = req.body;
+
+    const update = { status };
+    const campaign = await Campaign.findOne({ campaignID: campaignId });
+
+    if (!campaign) throw new CustomError(404, "Campaign does not exist");
+    await campaign.updateOne(update);
+
+    res.send({ message: "Updated successfully" });
   }
 );
 

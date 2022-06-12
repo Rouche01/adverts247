@@ -7,25 +7,26 @@ const advertiserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    addressLineOne: {
+    advertiserId: {
       type: String,
       required: true,
+    },
+    addressLineOne: {
+      type: String,
     },
     addressLineTwo: {
       type: String,
     },
     city: {
       type: String,
-      required: true,
     },
     state: {
       type: String,
-      required: true,
     },
     phoneNumber: {
       type: String,
-      required: true,
     },
+    campaigns: [{ type: mongoose.Schema.Types.ObjectId, ref: "Campaign" }],
   },
   options
 );

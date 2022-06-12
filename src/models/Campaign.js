@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const options = {
+  timestamps: true,
   toJSON: {
     versionKey: false,
-    timestamps: true,
     transform: (_doc, ret) => {
       ret.id = ret._id;
       delete ret._id;
@@ -27,7 +27,8 @@ const campaignSchema = new mongoose.Schema(
       default: "active",
     },
     advertiser: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Advertiser",
       required: true,
     },
     adType: {
@@ -46,6 +47,10 @@ const campaignSchema = new mongoose.Schema(
     duration: {
       type: [Date],
       length: 2,
+    },
+    campaignStat: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CampaignStat",
     },
   },
   options
