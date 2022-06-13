@@ -1,13 +1,14 @@
 const express = require("express");
 const { body } = require("express-validator");
 const router = express.Router();
-const { Driver } = require("../models/Driver");
-const { Admin } = require("../models/Admin");
-const { Advertiser } = require("../models/Advertiser");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
 require("dotenv").config();
+
+const { Driver } = require("../models/Driver");
+const { Admin } = require("../models/Admin");
+const { Advertiser } = require("../models/Advertiser");
 
 // email-sending util functions
 const {

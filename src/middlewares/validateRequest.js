@@ -6,10 +6,7 @@ module.exports = (req, res, next) => {
   const hasErrors = !error.isEmpty();
 
   if (hasErrors) {
-    throw new ValidationError(
-      error.errors,
-      "You are not entering all the data required to sign up."
-    );
+    throw new ValidationError(error.errors, "You are entering wrong data.");
   }
 
   next();

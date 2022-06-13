@@ -38,6 +38,7 @@ router.get("/quiz/:id", async (req, res) => {
 
 router.post(
   "/quizzes",
+  multerUploads(),
   body([
     "question",
     "option1",
@@ -46,9 +47,7 @@ router.post(
     "option4",
     "answer",
   ]).isString(),
-  body("image").notEmpty(),
   validateRequest,
-  multerUploads,
   cloudinaryConfig,
   async (req, res) => {
     const { question, option1, option2, option3, option4, answer, points } =
@@ -56,7 +55,9 @@ router.post(
     // res.setHeader('Content-Type', 'application/json')
     if (req.file) {
       const file = dataUri(req).content;
-      const cloudinaryObj = await uploader.upload(file);
+      const cloudinaryObj = await uploader.upload(file, {
+        folder: "advert-247-app/QUIZZES",
+      });
       const { secure_url } = cloudinaryObj;
       const options = [option1, option2, option3, option4];
 

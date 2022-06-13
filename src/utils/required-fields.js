@@ -40,6 +40,18 @@ const loginFields = [{ email: "email" }, { password: "password" }];
 
 const verifyTokenFields = [{ token: "string" }, { userId: "string" }];
 
+const campaignCreateFields = [
+  {
+    campaignName: "string",
+  },
+  {
+    advertiser: "string",
+  },
+  {
+    adBudget: "number",
+  },
+];
+
 const classifyFieldFormat = (requiredFields, format) => {
   return requiredFields
     .filter((field) => Object.values(field)[0] === format)
@@ -49,6 +61,7 @@ const classifyFieldFormat = (requiredFields, format) => {
 module.exports = {
   advertiserRegisterFields,
   classifyFieldFormat,
+  campaignCreateFields,
   loginFields,
   driverRegisterFields,
   adminRegisterFields,
