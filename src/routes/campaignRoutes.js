@@ -65,6 +65,10 @@ router.get(
       sort[sortBy] = orderBy === "desc" ? -1 : 1;
     }
 
+    const count = await Campaign.find(filterOptions, null, {
+      sort,
+    }).count();
+
     const campaigns = await Campaign.find(filterOptions, null, {
       ...paginationOptions,
       sort,
@@ -72,7 +76,7 @@ router.get(
       .populate("advertiser")
       .populate("campaignStat");
 
-    res.send({ campaigns, size: campaigns.length });
+    res.send({ campaigns, size: count });
   }
 );
 

@@ -1,10 +1,18 @@
 const express = require("express");
 const router = express.Router();
+const { omitBy, isNil } = require("lodash");
+
 const { Driver } = require("../models/Driver");
 const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
 const { CustomError } = require("../utils/error");
 const { ADMIN, DRIVER } = require("../constants/roles");
+const { query } = require("express-validator");
+
+const {
+  DRIVER_STATUS: { APPROVED, PENDING, SUSPENDED },
+} = require("../constants/driver");
+const validateRequest = require("../middlewares/validateRequest");
 
 // @route get /driver
 // @desc Get a user with the token sent along the request
@@ -22,12 +30,47 @@ router.get("/driver", requireAuth, checkRole(DRIVER), (req, res) => {
 // @route get /drivers
 // @desc Get all users
 // @access Public
-router.get("/drivers", requireAuth, checkRole(ADMIN), async (req, res) => {
-  const drivers = await Driver.find({ kind: "Driver" });
-  res.status(200).send({
-    drivers,
-  });
-});
+router.get(
+  "/drivers",
+  requireAuth,
+  checkRole(ADMIN),
+  query("status").optional().isIn([APPROVED, PENDING, SUSPENDED]),
+  query("limit").optional().isNumeric(),
+  query("skip").optional().isNumeric(),
+  query("sortBy")
+    .optional()
+    .isIn(["createdAt"])
+    .withMessage("You can only sort by createdAt"),
+  query("orderBy").optional().isIn(["desc", "asc"]),
+  validateRequest,
+  async (req, res) => {
+    const { status, limit, skip, sortBy, orderBy } = req.query;
+
+    const sort = {};
+    const filterOptions = status ? { status } : {};
+    let paginationOptions = omitBy({ limit, skip }, isNil);
+
+    Object.entries(paginationOptions).forEach(
+      ([key, val]) => (paginationOptions[key] = parseInt(val))
+    );
+
+    if (sortBy && orderBy) {
+      sort[sortBy] = orderBy === "desc" ? -1 : 1;
+    }
+
+    const count = await Driver.find(filterOptions, null, { sort }).count();
+
+    const drivers = await Driver.find(filterOptions, null, {
+      ...paginationOptions,
+      sort,
+    });
+
+    res.status(200).send({
+      drivers,
+      size: count,
+    });
+  }
+);
 
 router.get(
   "/driver/:driverId",

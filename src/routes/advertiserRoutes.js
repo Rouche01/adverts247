@@ -32,6 +32,8 @@ router.get(
       ([key, val]) => (paginationOptions[key] = parseInt(val))
     );
 
+    const count = await Advertiser.find(filterOpt, null).count();
+
     const advertisers = await Advertiser.find(filterOpt, null, {
       ...paginationOptions,
     }).populate({
@@ -40,7 +42,7 @@ router.get(
       populate: { path: "campaignStat" },
     });
 
-    res.send({ advertisers, size: advertisers.length });
+    res.send({ advertisers, size: count });
   }
 );
 
