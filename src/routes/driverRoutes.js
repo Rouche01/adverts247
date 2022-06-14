@@ -195,7 +195,7 @@ router.patch(
 );
 
 router.patch(
-  "drivers/change-status/",
+  "/driver/change-status/",
   requireAuth,
   checkRole(ADMIN),
   query("driver")
