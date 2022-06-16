@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
+const omitBy = require("lodash/omitBy");
+const isNil = require("lodash/isNil");
 
 const { MediaItem } = require("../models/MediaItem");
 
@@ -31,6 +33,37 @@ const {
 
 router.use(requireAuth);
 router.use(checkRole(ADMIN));
+
+router.get(
+  "/mediaitems",
+  query("limit").optional().isNumeric(),
+  query("skip").optional().isNumeric(),
+  validateRequest,
+  async (req, res) => {
+    const { limit, skip } = req.query;
+
+    let paginationOptions = omitBy({ limit, skip }, isNil);
+    Object.entries(paginationOptions).forEach(
+      ([key, val]) => (paginationOptions[key] = parseInt(val))
+    );
+
+    const count = await MediaItem.find({}).countDocuments();
+    const mediaItems = await MediaItem.find(null, null, {
+      ...paginationOptions,
+    });
+
+    res.send({ mediaItems, size: count });
+  }
+);
+
+router.get("/mediaitems/:mediaId", async (req, res) => {
+  const { mediaId } = req.params;
+  const mediaItem = await MediaItem.findOne({ mediaId });
+
+  if (!mediaItem) throw new CustomError(404, "Unable to find media item");
+
+  res.send(mediaItem);
+});
 
 router.post(
   "/mediaitems",
