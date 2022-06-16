@@ -31,6 +31,9 @@ const mediaItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    previewUri: {
+      type: String,
+    },
   },
   {
     timestamps: true,

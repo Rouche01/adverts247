@@ -8,6 +8,10 @@ const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
 const validateRequest = require("../middlewares/validateRequest");
 const { multerUploads } = require("../middlewares/multer");
+const {
+  uploader,
+  cloudinaryConfig,
+} = require("../middlewares/cloudinaryConfig");
 const { ADMIN } = require("../constants/roles");
 
 const {
@@ -15,8 +19,15 @@ const {
   classifyFieldFormat,
 } = require("../utils/required-fields");
 const { generateHashId } = require("../utils/generateHashId");
-const { uploadToMediaBucket } = require("../utils/mediaBucket");
+const {
+  uploadToMediaBucket,
+  generateSignedUrl,
+} = require("../utils/mediaBucket");
 const { CustomError } = require("../utils/error");
+const {
+  generateThumbnail,
+  deleteThumbnailFromDisk,
+} = require("../utils/mediaUtils");
 
 router.use(requireAuth);
 router.use(checkRole(ADMIN));
@@ -24,6 +35,7 @@ router.use(checkRole(ADMIN));
 router.post(
   "/mediaitems",
   multerUploads("mediaItem"),
+  cloudinaryConfig,
   body(classifyFieldFormat(mediaItemCreateFields, "string")).isString(),
   validateRequest,
   async (req, res) => {
@@ -45,17 +57,28 @@ router.post(
       req.file.buffer
     );
 
+    const signedUrl = generateSignedUrl(data.Bucket, data.Key);
+
+    const thumbnail = await generateThumbnail(signedUrl, title);
+
+    const { secure_url } = await uploader.upload(thumbnail, {
+      folder: "assets/THUMBNAILS",
+    });
+
+    await deleteThumbnailFromDisk(thumbnail);
+
     const mediaItem = new MediaItem({
       mediaId,
       title,
       duration,
       category,
       mediaUri: data.Location,
+      previewUri: secure_url,
     });
 
     await mediaItem.save();
 
-    res.send(mediaItem);
+    res.send("mediaItem");
   }
 );
 
