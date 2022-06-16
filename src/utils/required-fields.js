@@ -52,6 +52,12 @@ const campaignCreateFields = [
   },
 ];
 
+const mediaItemCreateFields = [
+  { title: "string" },
+  { duration: "string" },
+  { category: "string" }
+];
+
 const classifyFieldFormat = (requiredFields, format) => {
   return requiredFields
     .filter((field) => Object.values(field)[0] === format)
@@ -62,6 +68,7 @@ module.exports = {
   advertiserRegisterFields,
   classifyFieldFormat,
   campaignCreateFields,
+  mediaItemCreateFields,
   loginFields,
   driverRegisterFields,
   adminRegisterFields,

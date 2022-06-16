@@ -67,7 +67,7 @@ router.get(
 
     const count = await Campaign.find(filterOptions, null, {
       sort,
-    }).count();
+    }).countDocuments();
 
     const campaigns = await Campaign.find(filterOptions, null, {
       ...paginationOptions,

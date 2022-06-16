@@ -7,7 +7,7 @@ const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
 const { CustomError } = require("../utils/error");
 const { ADMIN, DRIVER } = require("../constants/roles");
-const { query } = require("express-validator");
+const { query, body } = require("express-validator");
 
 const {
   DRIVER_STATUS: { APPROVED, PENDING, SUSPENDED },
@@ -58,7 +58,9 @@ router.get(
       sort[sortBy] = orderBy === "desc" ? -1 : 1;
     }
 
-    const count = await Driver.find(filterOptions, null, { sort }).count();
+    const count = await Driver.find(filterOptions, null, {
+      sort,
+    }).countDocuments();
 
     const drivers = await Driver.find(filterOptions, null, {
       ...paginationOptions,
@@ -80,6 +82,7 @@ router.get(
     const { driverId } = req.params;
 
     const driver = await Driver.findById(driverId);
+    console.log(driver);
 
     if (!driver) {
       throw new CustomError(404, "This driver does not exist");
@@ -103,7 +106,6 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     phoneNumber,
     bankInformation,
     withdrawalCode,
-    status,
   } = req.body;
   if (
     !profilePhoto &&
@@ -111,8 +113,7 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     !email &&
     !phoneNumber &&
     !bankInformation &&
-    !withdrawalCode &&
-    !status
+    !withdrawalCode
   ) {
     throw new CustomError(400, "No update was sent");
   }
@@ -153,12 +154,6 @@ router.patch("/drivers/:id", requireAuth, async (req, res) => {
     newValues.$set.withdrawalCode = withdrawalCode;
   }
 
-  if (status) {
-    newValues.$set.status = status;
-  }
-
-  console.log(newValues);
-
   const response = await Driver.updateOne({ _id: driver._id }, newValues);
   res.status(200).send({
     message: "Driver updated successfully",
@@ -196,6 +191,29 @@ router.patch(
       message: "Driver device updated successfully",
       data: response,
     });
+  }
+);
+
+router.patch(
+  "/driver/change-status/",
+  requireAuth,
+  checkRole(ADMIN),
+  query("driver")
+    .isString()
+    .withMessage("Driver id is required as query param"),
+  body("status").isIn([PENDING, APPROVED, SUSPENDED]),
+  validateRequest,
+  async (req, res) => {
+    const { driver: driverId } = req.query;
+    const { status } = req.body;
+
+    const driver = await Driver.findOne({ _id: driverId });
+    if (!driver) throw new CustomError(404, "Driver does not exist");
+
+    driver.status = status;
+    await driver.save();
+
+    res.send({ message: "Updated driver status successfully", driver });
   }
 );
 
