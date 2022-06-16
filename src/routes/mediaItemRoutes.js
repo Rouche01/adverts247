@@ -115,4 +115,15 @@ router.post(
   }
 );
 
+router.delete("/mediaitems/:mediaId", async (req, res) => {
+  const { mediaId } = req.params;
+
+  const mediaItem = await MediaItem.findOne({ mediaId });
+  if (!mediaItem) throw new CustomError(404, "Media item does not exist");
+
+  await MediaItem.deleteOne({ mediaId });
+
+  res.send({ message: "Deleted item successfully" });
+});
+
 module.exports = router;
