@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  backend:
+    container_name: 247-api
+    image: 247-api
+    build: .
+    depends_on:
+      - redis-store
+    ports:
+      - "3005:3005"
+    env_file:
+      - ./.env
+    volumes:
+      - ./src:/app/src
+  redis-store:
+    image: redis:6.2-alpine
+    hostname: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    env_file:
+      - ./.env.cache
+    command: redis-server --save 20 1 --loglevel warning --requirepass $REDIS_PASSWORD
+    volumes:
+      - redis-store:/data
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./.env.cache
+volumes:
+  redis-store:
+    driver: local

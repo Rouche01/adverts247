@@ -1,6 +1,7 @@
 const express = require("express");
 const { body, query } = require("express-validator");
 const { omitBy, isNil } = require("lodash");
+const kebabCase = require("lodash/kebabCase")
 const router = express.Router();
 
 const { Campaign } = require("../models/Campaign");
@@ -142,7 +143,7 @@ router.post(
     } else {
       advertiser = new Advertiser({
         advertiserId: generateHashId({ prefix: "CU", length: 7 }),
-        email: "advertisers@adverts247.com",
+        email: `${kebabCase(req.body.advertiser)}-advertiser@adverts247.com`,
         password: process.env.ADVERTISERS_DEFAULT_PASSWORD,
         companyName: req.body.advertiser,
       });
