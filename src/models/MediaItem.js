@@ -31,6 +31,10 @@ const mediaItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    s3Key: {
+      type: String,
+      required: true,
+    },
     previewUri: {
       type: String,
     },

@@ -1,11 +1,16 @@
 require("express-async-errors");
 require("dotenv/config");
 const express = require("express");
-const app = express();
 const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
+const { createBullBoard } = require("@bull-board/api");
+const { BullMQAdapter } = require("@bull-board/api/bullMQAdapter");
+const { ExpressAdapter } = require("@bull-board/express");
 const { redisClient } = require("./utils/redisClient");
+
+const app = express();
+const serverAdapter = new ExpressAdapter();
 
 const authRoutes = require("./routes/authRoutes");
 const driverRoutes = require("./routes/driverRoutes");
@@ -18,6 +23,23 @@ const streamRoutes = require("./routes/streamRoutes");
 const campaignRoutes = require("./routes/campaignRoutes");
 const advertiserRoutes = require("./routes/advertiserRoutes");
 const mediaItemRoutes = require("./routes/mediaItemRoutes");
+
+const { generateThumbnailQueue } = require("./queues/thumbnail.queue");
+const {
+  cleanupMediaBucketQueue,
+} = require("./queues/cleanup-media-bucket.queue");
+const { cleanupCloudinaryQueue } = require("./queues/cleanup-cloudinary.queue");
+
+const { setQueues } = createBullBoard({
+  queues: [
+    new BullMQAdapter(generateThumbnailQueue),
+    new BullMQAdapter(cleanupMediaBucketQueue),
+    new BullMQAdapter(cleanupCloudinaryQueue),
+  ],
+  serverAdapter: serverAdapter,
+});
+
+serverAdapter.setBasePath("/admin/queues");
 
 const { seedRootAdmin } = require("../src/utils/seed-admin");
 const {
@@ -34,6 +56,7 @@ const PORT = process.env.PORT || 3005;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use("/admin/queues", serverAdapter.getRouter());
 app.use("/api", authRoutes);
 app.use("/api", driverRoutes);
 app.use("/api", advertiserRoutes);
@@ -76,7 +99,6 @@ app.use(errorHandler);
 const start = async () => {
   await redisClient.connect();
   redisClient.on("error", (error) => console.log(error));
-  console.log("Hello world")
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
