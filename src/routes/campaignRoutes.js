@@ -1,7 +1,7 @@
 const express = require("express");
 const { body, query } = require("express-validator");
 const { omitBy, isNil } = require("lodash");
-const kebabCase = require("lodash/kebabCase")
+const kebabCase = require("lodash/kebabCase");
 const router = express.Router();
 
 const { Campaign } = require("../models/Campaign");
@@ -14,6 +14,10 @@ const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
 const validateRequest = require("../middlewares/validateRequest");
 const { multerUploads, dataUri } = require("../middlewares/multer");
+const {
+  cloudinaryConfig,
+  uploader,
+} = require("../middlewares/cloudinaryConfig");
 
 const {
   classifyFieldFormat,
@@ -21,18 +25,18 @@ const {
 } = require("../utils/required-fields");
 const { generateHashId } = require("../utils/generateHashId");
 const { CustomError } = require("../utils/error");
-const {
-  cloudinaryConfig,
-  uploader,
-} = require("../middlewares/cloudinaryConfig");
-const { IMAGE, VIDEO } = require("../constants/adType");
 const { uploadToMediaBucket } = require("../utils/mediaBucket");
+
+const { IMAGE, VIDEO } = require("../constants/adType");
 const {
   ACTIVE,
   PAUSED,
   CLOSED,
   CAMPAIGN_ACTIONS,
 } = require("../constants/campaign");
+const { RECORD_TYPE } = require("../constants/thumbnail");
+
+const { addThumbnailJob } = require("../queues/thumbnail.queue");
 
 router.use(requireAuth);
 router.use(checkRole(ADMIN));
@@ -108,7 +112,7 @@ router.post(
     if (req.body.adType !== videoOrImg.toLowerCase())
       throw new CustomError(400, "Select the correct ad type");
 
-    let campaignMedia;
+    let campaignMedia, mediaBucketResponse;
 
     if (videoOrImg === IMAGE) {
       const file = dataUri(req).content;
@@ -122,40 +126,24 @@ router.post(
       const fileName = req.file.originalname.split(".");
       const fileType = fileName[fileName.length - 1];
 
-      const data = await uploadToMediaBucket(
-        req.body.campaignName,
+      mediaBucketResponse = await uploadToMediaBucket(
+        kebabCase(req.body.campaignName),
         fileType,
         "247-adverts-watchfolder",
         req.file.buffer
       );
 
-      campaignMedia = data.Location;
+      campaignMedia = mediaBucketResponse.data.Location;
     }
 
-    let advertiser;
-
-    const advertiserExists = await Advertiser.findOne({
-      companyName: req.body.advertiser,
-    });
-
-    if (advertiserExists) {
-      advertiser = advertiserExists;
-    } else {
-      advertiser = new Advertiser({
-        advertiserId: generateHashId({ prefix: "CU", length: 7 }),
-        email: `${kebabCase(req.body.advertiser)}-advertiser@adverts247.com`,
-        password: process.env.ADVERTISERS_DEFAULT_PASSWORD,
-        companyName: req.body.advertiser,
-      });
-      await advertiser.save();
-    }
+    const advertiser = await Advertiser.findById(req.body.advertiser);
 
     const campaign = new Campaign({
       campaignID,
       campaignMedia,
       ...req.body,
       duration,
-      advertiser: advertiser.id,
+      advertiser,
     });
 
     const campaignStat = new CampaignStat({
@@ -185,6 +173,15 @@ router.post(
 
     await session.commitTransaction();
     session.endSession();
+
+    const { data } = mediaBucketResponse;
+    await addThumbnailJob("generate thumbnail for campaign", {
+      bucket: data.Bucket,
+      key: data.Key,
+      title: kebabCase(req.body.campaignName),
+      recordId: campaign.campaignID,
+      recordType: RECORD_TYPE.CAMPAIGN,
+    });
 
     res.send(campaign);
   }

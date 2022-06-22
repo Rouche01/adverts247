@@ -48,6 +48,9 @@ const campaignSchema = new mongoose.Schema(
       type: [Date],
       length: 2,
     },
+    videoThumbnail: {
+      type: String,
+    },
     campaignStat: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CampaignStat",

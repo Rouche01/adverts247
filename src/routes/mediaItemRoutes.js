@@ -12,18 +12,18 @@ const checkRole = require("../middlewares/checkRole");
 const validateRequest = require("../middlewares/validateRequest");
 const { multerUploads } = require("../middlewares/multer");
 const { cloudinaryConfig } = require("../middlewares/cloudinaryConfig");
+
 const { ADMIN } = require("../constants/roles");
+const { RECORD_TYPE } = require("../constants/thumbnail");
 
 const {
   mediaItemCreateFields,
   classifyFieldFormat,
 } = require("../utils/required-fields");
 const { generateHashId } = require("../utils/generateHashId");
-const {
-  uploadToMediaBucket,
-  deleteFromMediaBucket,
-} = require("../utils/mediaBucket");
+const { uploadToMediaBucket } = require("../utils/mediaBucket");
 const { CustomError } = require("../utils/error");
+
 const { addThumbnailJob } = require("../queues/thumbnail.queue");
 const { addCleanupJob } = require("../queues/cleanup-media-bucket.queue");
 
@@ -34,18 +34,29 @@ router.get(
   "/mediaitems",
   query("limit").optional().isNumeric(),
   query("skip").optional().isNumeric(),
+  query("sortBy")
+    .optional()
+    .isIn(["createdAt", "adBudget"])
+    .withMessage("You can only sort by createdAt"),
+  query("orderBy").optional().isIn(["desc", "asc"]),
   validateRequest,
   async (req, res) => {
-    const { limit, skip } = req.query;
+    const { limit, skip, sortBy, orderBy } = req.query;
 
+    const sort = {};
     let paginationOptions = omitBy({ limit, skip }, isNil);
     Object.entries(paginationOptions).forEach(
       ([key, val]) => (paginationOptions[key] = parseInt(val))
     );
 
+    if (sortBy && orderBy) {
+      sort[sortBy] = orderBy === "desc" ? -1 : 1;
+    }
+
     const count = await MediaItem.find({}).countDocuments();
     const mediaItems = await MediaItem.find(null, null, {
       ...paginationOptions,
+      sort,
     });
 
     res.send({ mediaItems, size: count });
@@ -103,6 +114,7 @@ router.post(
       key: data.Key,
       title: transformedTitle,
       recordId: mediaItem.mediaId,
+      recordType: RECORD_TYPE.MEDIA_ITEM,
     });
 
     res.send("mediaItem");

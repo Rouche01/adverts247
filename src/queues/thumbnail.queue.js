@@ -9,6 +9,7 @@ const {
 } = require("../utils/mediaUtils");
 
 const { MediaItem } = require("../models/MediaItem");
+const { Campaign } = require("../models/Campaign");
 
 const QUEUE_NAME = "Thumbnails";
 
@@ -27,7 +28,7 @@ const worker = new Worker(
   QUEUE_NAME,
   async (job) => {
     console.log(job.data);
-    const { bucket, key, title, recordId } = job.data;
+    const { bucket, key, title, recordId, recordType } = job.data;
 
     config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -44,11 +45,17 @@ const worker = new Worker(
       });
 
       await deleteThumbnailFromDisk(thumbnail);
-      await MediaItem.findOneAndUpdate(
-        { mediaId: recordId },
-        { previewUri: secure_url },
-        { useFindAndModify: false }
-      );
+      recordType === "mediaItem"
+        ? await MediaItem.findOneAndUpdate(
+            { mediaId: recordId },
+            { previewUri: secure_url },
+            { useFindAndModify: false }
+          )
+        : await Campaign.findOneAndUpdate(
+            { campaignID: recordId },
+            { videoThumbnail: secure_url },
+            { useFindAndModify: false }
+          );
     }
   },
   {
