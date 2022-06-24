@@ -51,12 +51,33 @@ router.get(
   query("sortBy")
     .optional()
     .isIn(["createdAt", "adBudget"])
-    .withMessage("You can only sort by createdAt"),
+    .withMessage("You can only sort by createdAt and adBudget"),
   query("orderBy").optional().isIn(["desc", "asc"]),
+  query("startDate").optional().isDate(),
+  query("endDate").optional().isDate(),
   validateRequest,
   async (req, res) => {
-    const { status, type, limit, skip, sortBy, orderBy, advertiser } =
-      req.query;
+    const {
+      status,
+      type,
+      limit,
+      skip,
+      sortBy,
+      orderBy,
+      startDate,
+      endDate,
+      advertiser,
+    } = req.query;
+
+    console.log(startDate, endDate);
+    const dateFilter = {};
+
+    if (startDate && endDate) {
+      dateFilter.createdAt = {
+        $gte: new Date(startDate),
+        $lt: new Date(endDate),
+      };
+    }
 
     const sort = {};
     const filterOptions = omitBy({ status, adType: type, advertiser }, isNil);
@@ -70,14 +91,22 @@ router.get(
       sort[sortBy] = orderBy === "desc" ? -1 : 1;
     }
 
-    const count = await Campaign.find(filterOptions, null, {
-      sort,
-    }).countDocuments();
+    const count = await Campaign.find(
+      { ...filterOptions, ...dateFilter },
+      null,
+      {
+        sort,
+      }
+    ).countDocuments();
 
-    const campaigns = await Campaign.find(filterOptions, null, {
-      ...paginationOptions,
-      sort,
-    })
+    const campaigns = await Campaign.find(
+      { ...filterOptions, ...dateFilter },
+      null,
+      {
+        ...paginationOptions,
+        sort,
+      }
+    )
       .populate("advertiser")
       .populate("campaignStat");
 
@@ -136,14 +165,12 @@ router.post(
       campaignMedia = mediaBucketResponse.data.Location;
     }
 
-    const advertiser = await Advertiser.findById(req.body.advertiser);
-
     const campaign = new Campaign({
       campaignID,
       campaignMedia,
       ...req.body,
       duration,
-      advertiser,
+      advertiser: req.body.advertiser,
     });
 
     const campaignStat = new CampaignStat({
@@ -159,6 +186,7 @@ router.post(
       from: "test",
     });
 
+    const advertiser = await Advertiser.findById(req.body.advertiser);
     advertiser.campaigns.push(campaign);
 
     const session = await Campaign.startSession();

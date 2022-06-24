@@ -36,7 +36,7 @@ const worker = new Worker(
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
 
-    if (bucket && key && title && recordId) {
+    if (bucket && key && title && recordId && recordType) {
       const signedUrl = await generateSignedUrl(bucket, key);
       const thumbnail = await generateThumbnail(signedUrl, title);
 
