@@ -31,8 +31,14 @@ const mediaItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    s3Key: {
+      type: String,
+      required: true,
+    },
     previewUri: {
       type: String,
+      default:
+        "https://fakeimg.pl/640x360/282828/eae0d0/?retina=1&text=Generating%20thumbnail...&font_size=52",
     },
   },
   {

@@ -48,6 +48,11 @@ const campaignSchema = new mongoose.Schema(
       type: [Date],
       length: 2,
     },
+    videoThumbnail: {
+      type: String,
+      default:
+        "https://fakeimg.pl/640x360/282828/eae0d0/?retina=1&text=Generating%20thumbnail...&font_size=52",
+    },
     campaignStat: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CampaignStat",

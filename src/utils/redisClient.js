@@ -1,7 +1,10 @@
 const redis = require("redis");
 require("dotenv").config();
 
-const redisClient = redis.createClient({ url: process.env.REDIS_URL });
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL,
+  database: 0,
+});
 
 const getOrSetFallback = async (key, field, fallbackValue) => {
   try {

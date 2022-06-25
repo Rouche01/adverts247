@@ -3,6 +3,7 @@ const DatauriParser = require("datauri/parser");
 
 const storage = multer.memoryStorage();
 const multerUploads = (type = "image") => multer({ storage }).single(type);
+const optionalMulterUploads = () => multer({ storage }).any();
 
 const dUriParser = new DatauriParser();
 
@@ -12,4 +13,4 @@ const dataUri = (req) => {
   return dUriParser.format(`.${fileType}`, req.file.buffer);
 };
 
-module.exports = { multerUploads, dataUri };
+module.exports = { multerUploads, dataUri, optionalMulterUploads };

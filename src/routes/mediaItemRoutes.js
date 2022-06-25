@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, query } = require("express-validator");
 const omitBy = require("lodash/omitBy");
 const isNil = require("lodash/isNil");
+const kebabCase = require("lodash/kebabCase");
 
 const { MediaItem } = require("../models/MediaItem");
 
@@ -10,26 +11,21 @@ const requireAuth = require("../middlewares/requireAuth");
 const checkRole = require("../middlewares/checkRole");
 const validateRequest = require("../middlewares/validateRequest");
 const { multerUploads } = require("../middlewares/multer");
-const {
-  uploader,
-  cloudinaryConfig,
-} = require("../middlewares/cloudinaryConfig");
+const { cloudinaryConfig } = require("../middlewares/cloudinaryConfig");
+
 const { ADMIN } = require("../constants/roles");
+const { RECORD_TYPE } = require("../constants/thumbnail");
 
 const {
   mediaItemCreateFields,
   classifyFieldFormat,
 } = require("../utils/required-fields");
 const { generateHashId } = require("../utils/generateHashId");
-const {
-  uploadToMediaBucket,
-  generateSignedUrl,
-} = require("../utils/mediaBucket");
+const { uploadToMediaBucket } = require("../utils/mediaBucket");
 const { CustomError } = require("../utils/error");
-const {
-  generateThumbnail,
-  deleteThumbnailFromDisk,
-} = require("../utils/mediaUtils");
+
+const { addThumbnailJob } = require("../queues/thumbnail.queue");
+const { addCleanupJob } = require("../queues/cleanup-media-bucket.queue");
 
 router.use(requireAuth);
 router.use(checkRole(ADMIN));
@@ -38,18 +34,29 @@ router.get(
   "/mediaitems",
   query("limit").optional().isNumeric(),
   query("skip").optional().isNumeric(),
+  query("sortBy")
+    .optional()
+    .isIn(["createdAt", "adBudget"])
+    .withMessage("You can only sort by createdAt"),
+  query("orderBy").optional().isIn(["desc", "asc"]),
   validateRequest,
   async (req, res) => {
-    const { limit, skip } = req.query;
+    const { limit, skip, sortBy, orderBy } = req.query;
 
+    const sort = {};
     let paginationOptions = omitBy({ limit, skip }, isNil);
     Object.entries(paginationOptions).forEach(
       ([key, val]) => (paginationOptions[key] = parseInt(val))
     );
 
+    if (sortBy && orderBy) {
+      sort[sortBy] = orderBy === "desc" ? -1 : 1;
+    }
+
     const count = await MediaItem.find({}).countDocuments();
     const mediaItems = await MediaItem.find(null, null, {
       ...paginationOptions,
+      sort,
     });
 
     res.send({ mediaItems, size: count });
@@ -83,22 +90,14 @@ router.post(
     const fileName = req.file.originalname.split(".");
     const fileType = fileName[fileName.length - 1];
 
-    const data = await uploadToMediaBucket(
-      title,
+    const transformedTitle = kebabCase(title);
+
+    const { data, s3Key } = await uploadToMediaBucket(
+      transformedTitle,
       fileType,
       "vod-watchfolder-247",
       req.file.buffer
     );
-
-    const signedUrl = generateSignedUrl(data.Bucket, data.Key);
-
-    const thumbnail = await generateThumbnail(signedUrl, title);
-
-    const { secure_url } = await uploader.upload(thumbnail, {
-      folder: "assets/THUMBNAILS",
-    });
-
-    await deleteThumbnailFromDisk(thumbnail);
 
     const mediaItem = new MediaItem({
       mediaId,
@@ -106,10 +105,17 @@ router.post(
       duration,
       category,
       mediaUri: data.Location,
-      previewUri: secure_url,
+      s3Key,
     });
 
     await mediaItem.save();
+    await addThumbnailJob(title, {
+      bucket: data.Bucket,
+      key: data.Key,
+      title: transformedTitle,
+      recordId: mediaItem.mediaId,
+      recordType: RECORD_TYPE.MEDIA_ITEM,
+    });
 
     res.send("mediaItem");
   }
@@ -122,6 +128,14 @@ router.delete("/mediaitems/:mediaId", async (req, res) => {
   if (!mediaItem) throw new CustomError(404, "Media item does not exist");
 
   await MediaItem.deleteOne({ mediaId });
+  await addCleanupJob("deleteInWatchFolder", {
+    key: `${mediaItem.s3Key}.mp4`,
+    bucketName: "vod-watchfolder-247/inputs",
+  });
+  await addCleanupJob("deleteInConvertedFolder", {
+    key: `${mediaItem.s3Key}/`,
+    bucketName: "vod-247bucket",
+  });
 
   res.send({ message: "Deleted item successfully" });
 });

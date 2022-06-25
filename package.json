@@ -14,8 +14,11 @@
   "author": "adverts247",
   "license": "ISC",
   "dependencies": {
+    "@bull-board/api": "^4.0.0",
+    "@bull-board/express": "^4.0.0",
     "aws-sdk": "^2.806.0",
     "bcrypt": "^5.0.0",
+    "bullmq": "^1.86.2",
     "cloudinary": "^1.30.0",
     "cors": "^2.8.5",
     "datauri": "^3.0.0",
@@ -33,6 +36,7 @@
     "nodemailer": "^6.7.2",
     "nodemon": "^2.0.6",
     "redis": "^4.0.4",
+    "request-ip": "^2.2.0",
     "uuid": "^8.3.2"
   }
 }

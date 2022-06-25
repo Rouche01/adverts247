@@ -22,6 +22,14 @@ const quizSchema = new mongoose.Schema(
       type: Number,
       default: 2,
     },
+    timesAnswered: {
+      type: Number,
+      default: 0,
+    },
+    timesAnsweredCorrectly: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

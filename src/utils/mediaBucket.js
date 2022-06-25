@@ -14,6 +14,15 @@ const uploadToS3 = (params) => {
   });
 };
 
+const deleteFromS3Bucket = (params) => {
+  return new Promise((resolve, reject) => {
+    s3.deleteObject(params, (err, data) => {
+      if (err) reject(err);
+      return resolve(data);
+    });
+  });
+};
+
 const generateSignedUrl = (bucketName, key) => {
   const params = {
     Bucket: bucketName,
@@ -28,16 +37,29 @@ const generateSignedUrl = (bucketName, key) => {
   return s3.getSignedUrl("getObject", params);
 };
 
-const uploadToMediaBucket = (label, fileType, bucketName, buffer) => {
-  const key = `${label}-${uuidv4()}.${fileType}`;
+const uploadToMediaBucket = async (label, fileType, bucketName, buffer) => {
+  const key = `${label}-${uuidv4()}`;
   const params = {
     Bucket: `${bucketName}/inputs`,
-    Key: key,
+    Key: `${key}.${fileType}`,
     Body: buffer,
   };
 
-  console.log(key);
-  return uploadToS3(params);
+  const data = await uploadToS3(params);
+  return { data, s3Key: key };
 };
 
-module.exports = { uploadToMediaBucket, generateSignedUrl };
+const deleteFromMediaBucket = (key, bucketName) => {
+  const params = {
+    Bucket: bucketName,
+    Key: key,
+  };
+
+  return deleteFromS3Bucket(params);
+};
+
+module.exports = {
+  uploadToMediaBucket,
+  generateSignedUrl,
+  deleteFromMediaBucket,
+};
